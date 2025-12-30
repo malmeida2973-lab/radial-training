@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radial Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0056B3 0%, #003d82 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .logo img {
+            height: 70px;
+            width: auto;
+            max-width: 100%;
+        }
+
+        .logo h1 {
+            color: #0056B3;
+            font-size: 1.8em;
+            margin: 0;
+        }
+
+        .treinamento-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 4px solid #0056B3;
+        }
+
+        .treinamento-info h2 {
+            color: #333;
+            font-size: 1.4em;
+            margin-bottom: 10px;
+        }
+
+        .treinamento-info p {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        /* Progress Steps */
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .step.active .step-circle {
+            background: #0056B3;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .step.completed .step-circle {
+            background: #28a745;
+            color: white;
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .step.active .step-label {
+            color: #0056B3;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #0056B3;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .avaliacao-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+
+        .avaliacao-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+
+        .rating-group {
+            margin-bottom: 20px;
+        }
+
+        .rating-label {
+            display: block;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .stars {
+            display: flex;
+            gap: 5px;
+            font-size: 30px;
+        }
+
+        .star {
+            cursor: pointer;
+            color: #ddd;
+            transition: color 0.2s;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffd700;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #0056B3 0%, #003d82 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 86, 179, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #FF5722 0%, #FF7043 100%);
+        }
+
+        .sucesso {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .erro {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #0056B3;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hide {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .logo h1 {
+                font-size: 1.5em;
+            }
+
+            .step-label {
+                font-size: 10px;
+            }
+        }
+
+        /* Estilos para branding Radial */
+        .radial-branding {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #0056b3;
+            font-size: 14px;
+        }
+
+        .radial-branding h4 {
+            color: #0056b3;
+            font-size: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .radial-branding p {
+            color: #495057;
+            margin: 5px 0;
+            line-height: 1.5;
+        }
+
+        .radial-branding a {
+            color: #0056b3;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .radial-branding a:hover {
+            text-decoration: underline;
+        }
+
+        .whatsapp-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .whatsapp-section h4 {
+            color: #333;
+            font-size: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .whatsapp-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .whatsapp-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: #FF5722;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .whatsapp-btn:hover {
+            background: #E64A19;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3);
+        }
+
+        .whatsapp-btn span {
+            font-size: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .radial-branding {
+                font-size: 13px;
+                padding: 15px;
+            }
+
+            .whatsapp-btn {
+                font-size: 13px;
+                padding: 10px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <img src="logo.jpg?t=20251223170400" alt="Logo Radial" style="max-height: 60px;">
+            <h1>Radial Training</h1>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Carregando...</p>
+        </div>
+
+        <div id="conteudo" class="hide">
+            <div class="treinamento-info" id="infoTreinamento"></div>
+
+            <!-- Branding Radial (discreto) -->
+            <div class="radial-branding">
+                <h4>🏭 Treinamento oferecido por Radial Rolamentos</h4>
+                <p><strong>Desde 1968</strong> fornecendo soluções completas em transmissão de potência</p>
+                <p>📦 Maior estoque de produtos industriais da América Latina</p>
+                <p>🌐 <a href="https://rolamentosradial.com.br" target="_blank">rolamentosradial.com.br</a></p>
+            </div>
+
+            <!-- WhatsApp Section -->
+            <div class="whatsapp-section" id="whatsappSection">
+                <h4>💬 Fale Conosco via WhatsApp</h4>
+                <div class="whatsapp-buttons" id="whatsappButtons">
+                    <!-- Botões serão inseridos dinamicamente -->
+                </div>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="steps">
+                <div class="step" id="step1">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Cadastro</div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Presença</div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Avaliação</div>
+                </div>
+            </div>
+
+            <!-- ETAPA 1: Cadastro -->
+            <div id="etapa1" class="hide">
+                <h3 style="color: #0056B3; margin-bottom: 20px;">📝 Etapa 1: Cadastro Pré-Treinamento</h3>
+                
+                <!-- Buscar participante por email (padrão) -->
+                <div id="formBuscarCadastrado" style="display: block;">
+                    <div class="info-box">
+                        Digite seu e-mail para localizar seu cadastro e confirmar presença.
+                    </div>
+                    <form id="formBuscarNome">
+                        <div class="form-group">
+                            <label>Digite seu E-mail <span class="required">*</span></label>
+                            <input type="text" name="email_busca" id="nomeBusca" required placeholder="seu.email@empresa.com.br">
+                        </div>
+                        <button type="submit" class="btn">🔍 Buscar Cadastro</button>
+                    </form>
+                    <div id="resultadoBusca" class="hide" style="margin-top: 20px;"></div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <p style="color: #666; margin-bottom: 10px;">Não encontrou seu cadastro?</p>
+                        <button type="button" class="btn" onclick="mostrarFormularioCadastro('novo')" style="background: #FF5722;">
+                            ➕ Fazer Novo Cadastro
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formulário Novo Cadastro -->
+                <div id="formNovoCadastro" class="hide">
+                    <div class="info-box">
+                        Preencha seus dados para se cadastrar no treinamento.
+                    </div>
+                    <form id="formCadastro">
+                        <div class="form-group">
+                            <label>Nome Completo <span class="required">*</span></label>
+                            <input type="text" name="nome" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>E-mail <span class="required">*</span></label>
+                            <input type="email" name="email" required id="emailInput">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Telefone/Celular <span class="required">*</span></label>
+                            <input type="tel" name="telefone" required placeholder="(00) 00000-0000">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Função/Cargo <span class="required">*</span></label>
+                            <input type="text" name="funcao" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Área/Departamento <span class="required">*</span></label>
+                            <input type="text" name="area" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Empresa <span class="required">*</span></label>
+                            <input type="text" name="empresa_participante" required>
+                        </div>
+
+                        <button type="submit" class="btn">✅ Cadastrar e Avançar</button>
+                        <button type="button" class="btn" onclick="voltarBusca()" style="background: #555; margin-top: 10px;">⬅️ Voltar à Busca</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ETAPA 2: Presença -->
+            <div id="etapa2" class="hide">
+                <h3 style="color: #FF5722; margin-bottom: 20px;">✋ Etapa 2: Confirmar Presença</h3>
+                <div class="info-box">
+                    Confirme sua presença no treinamento.
+                </div>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                    <p><strong>Nome:</strong> <span id="nomeParticipante"></span></p>
+                    <p><strong>Email:</strong> <span id="emailParticipante"></span></p>
+                </div>
+                
+                <div id="divPin" class="hide" style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+                    <label style="color: #856404; margin-bottom: 10px; display: block;">🔐 Digite o PIN de Presença fornecido pelo instrutor</label>
+                    <input type="text" id="inputPin" placeholder="Digite o PIN aqui" style="font-size: 18px; letter-spacing: 3px; text-align: center;">
+                </div>
+                
+                <button id="btnPresenca" class="btn btn-success">✅ Confirmar Minha Presença</button>
+
+                <div style="margin-top: 20px;">
+                    <button type="button" class="btn" style="background: #FF5722;" onclick="abrirEdicaoDados()">✏️ Editar meus dados</button>
+                </div>
+
+                <div id="formEditarContainer" class="hide" style="margin-top: 15px; background: #f8f9fa; padding: 20px; border-radius: 10px;">
+                    <h4 style="margin-bottom: 10px; color: #0056B3;">Atualizar cadastro</h4>
+                    <form id="formEditarDados">
+                        <div class="form-group">
+                            <label>Nome Completo</label>
+                            <input type="text" name="nome_edit" id="nomeEdit">
+                        </div>
+                        <div class="form-group">
+                            <label>E-mail</label>
+                            <input type="email" name="email_edit" id="emailEdit">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefone/Celular</label>
+                            <input type="tel" name="telefone_edit" id="telefoneEdit">
+                        </div>
+                        <div class="form-group">
+                            <label>Função/Cargo</label>
+                            <input type="text" name="funcao_edit" id="funcaoEdit">
+                        </div>
+                        <div class="form-group">
+                            <label>Área/Departamento</label>
+                            <input type="text" name="area_edit" id="areaEdit">
+                        </div>
+                        <div class="form-group">
+                            <label>Empresa</label>
+                            <input type="text" name="empresa_edit" id="empresaEdit">
+                        </div>
+                        <button type="submit" class="btn btn-success">💾 Salvar alterações</button>
+                        <button type="button" class="btn" style="background:#555; margin-top:10px;" onclick="fecharEdicaoDados()">Cancelar</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ETAPA 3: Avaliação -->
+            <div id="etapa3" class="hide">
+                <h3 style="color: #0056B3; margin-bottom: 20px;">⭐ Etapa 3: Avaliação do Treinamento</h3>
+                <div class="info-box">
+                    Avalie o treinamento e deixe suas sugestões.
+                </div>
+
+                <form id="formAvaliacao">
+                    <div class="avaliacao-section">
+                        <h3>Avalie de 1 a 5 estrelas</h3>
+
+                        <div class="rating-group">
+                            <span class="rating-label">Avaliação Geral</span>
+                            <div class="stars" data-rating="avaliacao_geral">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                            </div>
+                        </div>
+
+                        <div class="rating-group">
+                            <span class="rating-label">Conteúdo Apresentado</span>
+                            <div class="stars" data-rating="avaliacao_conteudo">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                            </div>
+                        </div>
+
+                        <div class="rating-group">
+                            <span class="rating-label">Desempenho do Instrutor</span>
+                            <div class="stars" data-rating="avaliacao_instrutor">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                            </div>
+                        </div>
+
+                        <div class="rating-group">
+                            <span class="rating-label">Material Didático</span>
+                            <div class="stars" data-rating="avaliacao_material">
+                                <span class="star" data-value="1">★</span>
+                                <span class="star" data-value="2">★</span>
+                                <span class="star" data-value="3">★</span>
+                                <span class="star" data-value="4">★</span>
+                                <span class="star" data-value="5">★</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Sugestões e Comentários</label>
+                        <textarea name="sugestoes" placeholder="Deixe suas sugestões para melhorarmos nossos treinamentos..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">🎉 Enviar Avaliação Final</button>
+                </form>
+            </div>
+
+            <!-- ETAPA FINAL: Certificado -->
+            <div id="etapaFinal" class="hide">
+                <h3 style="color: #2c7a7b; margin-bottom: 20px;">📜 Certificado de Participação</h3>
+                <div class="info-box" id="certInfo">
+                    Verificando disponibilidade do certificado...
+                </div>
+                <button id="btnBaixarCert" class="btn btn-success" disabled>⬇️ Baixar Certificado</button>
+                <button id="btnRecarregarCert" class="btn" style="margin-top:10px; background:#FF5722; color:white;">🔄 Verificar Novamente</button>
+            </div>
+
+            <!-- Mensagem Final (genérica) -->
+            <div id="mensagemFinal" class="hide"></div>
+        </div>
+
+        <div id="mensagemErro"></div>
+    </div>
+
+    <script>
+        let treinamentoId = null;
+        let treinamentoCodigo = null;
+        let participanteEmail = null;
+        let participanteNome = null;
+        let etapaAtual = 1;
+        let treinamentoData = null;
+        let respostaAtualId = null;
+        let storageKey = null;
+
+        const ratings = {
+            avaliacao_geral: 0,
+            avaliacao_conteudo: 0,
+            avaliacao_instrutor: 0,
+            avaliacao_material: 0
+        };
+
+        // Obter código do treinamento da URL
+        const urlParams = new URLSearchParams(window.location.search);
+        treinamentoCodigo = urlParams.get('t');
+
+        // Carregar informações do treinamento
+        async function carregarTreinamento() {
+            if (!treinamentoCodigo) {
+                document.getElementById('loading').innerHTML = '<div class="erro">Código de treinamento não encontrado!</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/treinamentos/${treinamentoCodigo}`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    treinamentoId = data.id;
+                    storageKey = `treinamento:${treinamentoId}:participante`;
+                    mostrarInfoTreinamento(data);
+                    document.getElementById('loading').classList.add('hide');
+                    document.getElementById('conteudo').classList.remove('hide');
+                    // Sempre iniciar na Etapa 1 para buscar/selecionar participante
+                    mostrarEtapa(1);
+                    // Se houver participante salvo, apenas facilitar o preenchimento da busca
+                    const salvo = carregarParticipanteLocal();
+                    if (salvo && salvo.email) {
+                        const campoBusca = document.getElementById('nomeBusca');
+                        if (campoBusca) campoBusca.value = salvo.email || '';
+                    }
+                } else {
+                    throw new Error(data.erro);
+                }
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `<div class="erro">Erro: ${error.message}</div>`;
+            }
+        }
+
+        function mostrarInfoTreinamento(data) {
+            treinamentoData = data;
+            const dataFormatada = new Date(data.data).toLocaleDateString('pt-BR');
+            document.getElementById('infoTreinamento').innerHTML = `
+                <h2>${data.titulo}</h2>
+                <p><strong>Empresa:</strong> ${data.empresa}</p>
+                ${data.empresa_cliente ? `<p><strong>Cliente:</strong> ${data.empresa_cliente}</p>` : ''}
+                <p><strong>Data:</strong> ${dataFormatada}</p>
+                ${data.hora_inicio ? `<p><strong>Horário:</strong> ${data.hora_inicio}${data.hora_fim ? ' às ' + data.hora_fim : ''}</p>` : ''}
+                ${data.local ? `<p><strong>Local:</strong> ${data.local}</p>` : ''}
+                ${data.instrutor ? `<p><strong>Instrutor:</strong> ${data.instrutor}</p>` : ''}
+            `;
+
+            // Criar botões WhatsApp dinamicamente
+            criarBotoesWhatsApp(data);
+        }
+
+        function criarBotoesWhatsApp(data) {
+            const container = document.getElementById('whatsappButtons');
+            let botoesHTML = '';
+
+            // Consolidar TODOS os Instrutores (principal + adicionais)
+            let instrutores = [];
+            
+            // Adicionar instrutor principal se houver
+            if (data.instrutor && data.telefone_instrutor) {
+                instrutores.push({
+                    nome: data.instrutor,
+                    telefone: data.telefone_instrutor,
+                    tipo: 'instrutor'
+                });
+            }
+
+            // Adicionar instrutores adicionais
+            try {
+                const instrutoresAdicionais = JSON.parse(data.instrutores_adicionais || '[]');
+                instrutoresAdicionais.forEach(instrutor => {
+                    if (instrutor.nome && instrutor.telefone) {
+                        instrutores.push({
+                            nome: instrutor.nome,
+                            telefone: instrutor.telefone,
+                            tipo: 'instrutor'
+                        });
+                    }
+                });
+            } catch (e) {
+                console.log('Erro ao parsear instrutores:', e);
+            }
+
+            // Renderizar botões de Instrutores
+            instrutores.forEach(instrutor => {
+                const tel = instrutor.telefone.replace(/\D/g, '');
+                const msg = encodeURIComponent(`Olá ${instrutor.nome}, sou participante do treinamento "${data.titulo}". Gostaria de tirar uma dúvida.`);
+                botoesHTML += `
+                    <a href="https://wa.me/55${tel}?text=${msg}" target="_blank" class="whatsapp-btn">
+                        <span>📚</span>
+                        Instrutor ${instrutor.nome}
+                    </a>
+                `;
+            });
+
+            // Botão do Representante Comercial
+            if (data.telefone_representante && data.nome_representante) {
+                const telRepresentante = data.telefone_representante.replace(/\D/g, '');
+                const nomeRepresentante = data.nome_representante;
+                const mensagemRepresentante = encodeURIComponent(`Olá ${nomeRepresentante}, sou participante do treinamento "${data.titulo}". Gostaria de mais informações sobre produtos.`);
+                botoesHTML += `
+                    <a href="https://wa.me/55${telRepresentante}?text=${mensagemRepresentante}" target="_blank" class="whatsapp-btn">
+                        <span>🤝</span>
+                        Representante ${nomeRepresentante}
+                    </a>
+                `;
+            }
+
+            // Técnicos
+            try {
+                const tecnicos = JSON.parse(data.tecnicos || '[]');
+                tecnicos.forEach(tecnico => {
+                    if (tecnico.nome && tecnico.telefone) {
+                        const tel = tecnico.telefone.replace(/\D/g, '');
+                        const msg = encodeURIComponent(`Olá ${tecnico.nome}, sou participante do treinamento "${data.titulo}". Preciso de suporte técnico.`);
+                        botoesHTML += `
+                            <a href="https://wa.me/55${tel}?text=${msg}" target="_blank" class="whatsapp-btn">
+                                <span>🔧</span>
+                                Técnico ${tecnico.nome}
+                            </a>
+                        `;
+                    }
+                });
+            } catch (e) {
+                console.log('Erro ao parsear técnicos:', e);
+            }
+
+            // Se não houver nenhum contato, ocultar a seção
+            if (botoesHTML === '') {
+                document.getElementById('whatsappSection').style.display = 'none';
+            } else {
+                container.innerHTML = botoesHTML;
+                document.getElementById('whatsappSection').style.display = 'block';
+            }
+        }
+
+        function voltarBusca() {
+            // Limpar campos do formulário de cadastro
+            document.getElementById('formCadastro').reset();
+            // Ocultar formulário de novo cadastro
+            document.getElementById('formNovoCadastro').classList.add('hide');
+            // Mostrar área de busca
+            document.getElementById('formBuscarCadastrado').style.display = 'block';
+            // Limpar resultado da busca
+            document.getElementById('resultadoBusca').classList.add('hide');
+            document.getElementById('resultadoBusca').innerHTML = '';
+        }
+
+        function mostrarEtapa(etapa) {
+            // Ocultar todas as etapas
+            document.getElementById('etapa1').classList.add('hide');
+            document.getElementById('etapa2').classList.add('hide');
+            document.getElementById('etapa3').classList.add('hide');
+            document.getElementById('etapaFinal').classList.add('hide');
+
+            // Atualizar steps
+            for (let i = 1; i <= 3; i++) {
+                const step = document.getElementById(`step${i}`);
+                step.classList.remove('active', 'completed');
+                if (i < etapa) {
+                    step.classList.add('completed');
+                } else if (i === etapa) {
+                    step.classList.add('active');
+                }
+            }
+
+            // Mostrar etapa atual
+            if (etapa <= 3) {
+                document.getElementById(`etapa${etapa}`).classList.remove('hide');
+            } else {
+                // Esconde os steps visuais e mostra somente o certificado
+                document.querySelector('.steps').classList.add('hide');
+                document.getElementById('etapaFinal').classList.remove('hide');
+            }
+            etapaAtual = etapa;
+        }
+
+        // ETAPA 1: Cadastro
+        document.getElementById('formCadastro').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = {
+                treinamento_id: treinamentoId,
+                nome: formData.get('nome'),
+                email: formData.get('email'),
+                telefone: formData.get('telefone'),
+                funcao: formData.get('funcao'),
+                area: formData.get('area'),
+                empresa_participante: formData.get('empresa_participante')
+            };
+
+            participanteEmail = data.email;
+            participanteNome = data.nome;
+            salvarParticipanteLocal();
+
+            try {
+                const response = await fetch('/api/cadastro', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('nomeParticipante').textContent = participanteNome;
+                    document.getElementById('emailParticipante').textContent = participanteEmail;
+                    
+                    // Mostrar campo PIN se necessário
+                    if (treinamentoData && treinamentoData.exigir_pin) {
+                        document.getElementById('divPin').classList.remove('hide');
+                    }
+                    
+                    if (result.ja_cadastrado) {
+                        // Verificar status
+                        verificarStatus();
+                    } else {
+                        mostrarEtapa(2);
+                    }
+                } else {
+                    throw new Error(result.erro);
+                }
+            } catch (error) {
+                alert('Erro ao cadastrar: ' + error.message);
+            }
+        });
+
+        // ETAPA 2: Presença
+        document.getElementById('btnPresenca').addEventListener('click', async () => {
+            const pinFornecido = document.getElementById('inputPin').value;
+            
+            try {
+                const response = await fetch('/api/presenca', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        treinamento_id: treinamentoId,
+                        email: participanteEmail,
+                        pin_fornecido: pinFornecido
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    mostrarEtapa(3);
+                } else if (response.status === 401) {
+                    alert('❌ PIN inválido! Verifique com o instrutor.');
+                } else {
+                    throw new Error(result.erro);
+                }
+            } catch (error) {
+                alert('Erro ao confirmar presença: ' + error.message);
+            }
+        });
+
+        // Sistema de avaliação por estrelas
+        document.querySelectorAll('.stars').forEach(starsContainer => {
+            const ratingName = starsContainer.getAttribute('data-rating');
+            const stars = starsContainer.querySelectorAll('.star');
+
+            stars.forEach(star => {
+                star.addEventListener('click', () => {
+                    const value = parseInt(star.getAttribute('data-value'));
+                    ratings[ratingName] = value;
+
+                    stars.forEach((s, index) => {
+                        if (index < value) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                });
+
+                star.addEventListener('mouseenter', () => {
+                    const value = parseInt(star.getAttribute('data-value'));
+                    stars.forEach((s, index) => {
+                        if (index < value) {
+                            s.style.color = '#ffd700';
+                        } else {
+                            s.style.color = '#ddd';
+                        }
+                    });
+                });
+            });
+
+            starsContainer.addEventListener('mouseleave', () => {
+                const currentRating = ratings[ratingName];
+                stars.forEach((s, index) => {
+                    if (index < currentRating) {
+                        s.style.color = '#ffd700';
+                    } else {
+                        s.style.color = '#ddd';
+                    }
+                });
+            });
+        });
+
+        // ETAPA 3: Avaliação
+        document.getElementById('formAvaliacao').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const data = {
+                treinamento_id: treinamentoId,
+                email: participanteEmail,
+                avaliacao_geral: ratings.avaliacao_geral,
+                avaliacao_conteudo: ratings.avaliacao_conteudo,
+                avaliacao_instrutor: ratings.avaliacao_instrutor,
+                avaliacao_material: ratings.avaliacao_material,
+                sugestoes: formData.get('sugestoes')
+            };
+
+            try {
+                const response = await fetch('/api/avaliacao', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    // Após avaliação, ir para etapa final (certificado)
+                    document.getElementById('step3').classList.add('completed');
+                    mostrarEtapa(4);
+                    atualizarEstadoCertificado();
+                } else {
+                    throw new Error('Erro ao enviar avaliação');
+                }
+            } catch (error) {
+                alert('Erro ao enviar avaliação: ' + error.message);
+            }
+        });
+
+        // Verificar status do participante
+        async function verificarStatus() {
+            try {
+                const response = await fetch(`/api/participante/${treinamentoId}/${participanteEmail}`);
+                const data = await response.json();
+
+                if (data && data.id) {
+                    respostaAtualId = data.id;
+                    participanteNome = data.nome || participanteNome;
+                    document.getElementById('nomeParticipante').textContent = participanteNome || '';
+                    document.getElementById('emailParticipante').textContent = participanteEmail || '';
+                    salvarParticipanteLocal();
+                }
+
+                if (data.status === 'cadastrado') {
+                    // Já cadastrado, vai para presença
+                    mostrarEtapa(2);
+                } else if (data.status === 'presente') {
+                    // Já confirmou presença, vai para avaliação
+                    mostrarEtapa(3);
+                } else if (data.status === 'avaliado') {
+                    // Já completou tudo: mostrar somente etapa final (certificado)
+                    mostrarEtapa(4);
+                    atualizarEstadoCertificado();
+                }
+            } catch (error) {
+                // Novo participante, começa na etapa 1
+                console.log('Novo participante');
+                mostrarEtapa(1);
+            }
+        }
+
+        function abrirEdicaoDados() {
+            // Preencher form com dados atuais
+            document.getElementById('formEditarContainer').classList.remove('hide');
+            document.getElementById('nomeEdit').value = participanteNome || '';
+            document.getElementById('emailEdit').value = participanteEmail || '';
+            document.getElementById('telefoneEdit').value = '';
+            document.getElementById('funcaoEdit').value = '';
+            document.getElementById('areaEdit').value = '';
+            document.getElementById('empresaEdit').value = '';
+        }
+
+        function fecharEdicaoDados() {
+            document.getElementById('formEditarContainer').classList.add('hide');
+        }
+
+        document.getElementById('formEditarDados').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!respostaAtualId) {
+                alert('Cadastro não localizado para edição.');
+                return;
+            }
+
+            const nome = document.getElementById('nomeEdit').value || participanteNome || '';
+            const email = document.getElementById('emailEdit').value || participanteEmail || '';
+            const telefone = document.getElementById('telefoneEdit').value || '';
+            const funcao = document.getElementById('funcaoEdit').value || '';
+            const area = document.getElementById('areaEdit').value || '';
+            const empresa_participante = document.getElementById('empresaEdit').value || '';
+
+            try {
+                const resp = await fetch(`/api/respostas/${respostaAtualId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, telefone, funcao, area, empresa_participante })
+                });
+                if (resp.ok) {
+                    participanteNome = nome;
+                    participanteEmail = email;
+                    document.getElementById('nomeParticipante').textContent = participanteNome;
+                    document.getElementById('emailParticipante').textContent = participanteEmail;
+                    salvarParticipanteLocal();
+                    alert('Dados atualizados com sucesso.');
+                    fecharEdicaoDados();
+                } else {
+                    const j = await resp.json().catch(() => ({}));
+                    alert('Erro ao atualizar: ' + (j.erro || resp.status));
+                }
+            } catch (err) {
+                alert('Erro ao enviar atualização.');
+            }
+        });
+
+        async function atualizarEstadoCertificado() {
+            const info = document.getElementById('certInfo');
+            const btnBaixar = document.getElementById('btnBaixarCert');
+            btnBaixar.disabled = true;
+            info.textContent = 'Verificando disponibilidade do certificado...';
+
+            try {
+                // Consultar status do participante (retorna campo certificado_arquivo se existir)
+                const r = await fetch(`/api/participante/${treinamentoId}/${encodeURIComponent(participanteEmail)}`);
+                const p = await r.json();
+                if (p && p.certificado_arquivo) {
+                    info.innerHTML = 'Seu certificado está disponível para download.';
+                    btnBaixar.disabled = false;
+                } else {
+                    info.innerHTML = 'Seu certificado ainda não está disponível. Assim que o instrutor publicar, este botão será liberado.';
+                    btnBaixar.disabled = true;
+                }
+            } catch (e) {
+                info.innerHTML = 'Não foi possível verificar o certificado agora.';
+                btnBaixar.disabled = true;
+            }
+        }
+
+        document.getElementById('btnBaixarCert').addEventListener('click', async () => {
+            if (!participanteEmail || !treinamentoId) return;
+            // Tenta baixar; se não existir, a API responde 404
+            window.location.href = `/api/certificado/${treinamentoId}/${encodeURIComponent(participanteEmail)}`;
+        });
+
+        document.getElementById('btnRecarregarCert').addEventListener('click', atualizarEstadoCertificado);
+
+        function mostrarFormularioCadastro(tipo) {
+            if (tipo === 'novo') {
+                document.getElementById('formBuscarCadastrado').classList.add('hide');
+                document.getElementById('formNovoCadastro').classList.remove('hide');
+            } else {
+                document.getElementById('formNovoCadastro').classList.add('hide');
+                document.getElementById('formBuscarCadastrado').classList.remove('hide');
+            }
+        }
+
+        // Buscar participante por email
+        document.getElementById('formBuscarNome').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const emailBusca = document.getElementById('nomeBusca').value;
+
+            try {
+                const response = await fetch(`/api/buscar-participante/${treinamentoId}/${encodeURIComponent(emailBusca)}`);
+                const data = await response.json();
+
+                if (response.ok && data.length > 0) {
+                    // Mostrar resultados
+                    const resultadoDiv = document.getElementById('resultadoBusca');
+                    resultadoDiv.innerHTML = '<h4 style="color: #0056B3; margin-bottom: 15px;">Cadastro encontrado:</h4>';
+                    
+                    data.forEach(participante => {
+                        resultadoDiv.innerHTML += `
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 10px; cursor: pointer; border: 2px solid #e0e0e0;" 
+                                 onclick="selecionarParticipante('${participante.email}', '${participante.nome}')"
+                                 onmouseover="this.style.borderColor='#0056B3'" 
+                                 onmouseout="this.style.borderColor='#e0e0e0'">
+                                <strong>${participante.nome}</strong><br>
+                                <small style="color: #666;">${participante.email} | ${participante.empresa_participante}</small>
+                            </div>
+                        `;
+                    });
+                    
+                    resultadoDiv.classList.remove('hide');
+                } else {
+                    alert('❌ Nenhum cadastro encontrado com esse e-mail. Verifique a digitação ou faça um novo cadastro.');
+                }
+            } catch (error) {
+                alert('Erro ao buscar cadastro: ' + error.message);
+            }
+        });
+
+        // Selecionar participante e ir para etapa 2
+        function selecionarParticipante(email, nome) {
+            participanteEmail = email;
+            participanteNome = nome;
+            document.getElementById('nomeParticipante').textContent = nome;
+            document.getElementById('emailParticipante').textContent = email;
+            salvarParticipanteLocal();
+            
+            // Mostrar campo PIN se necessário
+            if (treinamentoData && treinamentoData.exigir_pin) {
+                document.getElementById('divPin').classList.remove('hide');
+            } else {
+                document.getElementById('divPin').classList.add('hide');
+            }
+            
+            // Verificar status do participante para ir à etapa correta
+            verificarStatus();
+        }
+
+        // Carregar treinamento ao iniciar
+        carregarTreinamento();
+
+        function salvarParticipanteLocal() {
+            if (!storageKey) return;
+            const obj = { email: participanteEmail, nome: participanteNome };
+            try { localStorage.setItem(storageKey, JSON.stringify(obj)); } catch {}
+        }
+
+        function carregarParticipanteLocal() {
+            if (!storageKey) return null;
+            try {
+                const raw = localStorage.getItem(storageKey);
+                return raw ? JSON.parse(raw) : null;
+            } catch {
+                return null;
+            }
+        }
+
+        function limparParticipanteLocal() {
+            if (!storageKey) return;
+            try { localStorage.removeItem(storageKey); } catch {}
+        }
+    </script>
+</body>
+</html>

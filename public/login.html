@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Painel Admin Radial</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo-section {
+            margin-bottom: 30px;
+        }
+
+        .logo-section img {
+            height: 80px;
+            width: auto;
+            margin-bottom: 20px;
+        }
+
+        .logo-section h1 {
+            color: #333;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .logo-section p {
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .erro {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            border-left: 4px solid #17a2b8;
+        }
+
+        @media (max-width: 500px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+
+            .logo-section img {
+                height: 60px;
+            }
+
+            .logo-section h1 {
+                font-size: 1.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo-section">
+            <img src="logo.jpg?t=20251223170400" alt="Logo Radial">
+            <h1>Painel Administrativo</h1>
+            <p>Radial - Treinamentos</p>
+        </div>
+
+        <div class="erro" id="msgErro"></div>
+
+        <form id="formLogin" onsubmit="fazerLogin(event)">
+            <div class="form-group">
+                <label for="senha">🔐 Senha de Acesso</label>
+                <input type="password" id="senha" required placeholder="Digite a senha">
+            </div>
+
+            <button type="submit" class="btn">🔓 Acessar Painel</button>
+        </form>
+
+        <p style="margin-top: 30px; color: #999; font-size: 12px;">
+            Sistema Seguro de Treinamentos v2.0
+        </p>
+    </div>
+
+    <script>
+        function fazerLogin(event) {
+            event.preventDefault();
+            const senha = document.getElementById('senha').value;
+
+            // Validação simples de senha
+            const senhaCorreta = 'radial123';
+
+            if (senha === senhaCorreta) {
+                // Salvar token de sessão no localStorage
+                localStorage.setItem('admin_token', btoa(new Date().getTime() + senha));
+                localStorage.setItem('admin_login', new Date().getTime());
+                
+                // Redirecionar para admin
+                window.location.href = 'admin.html';
+            } else {
+                document.getElementById('msgErro').textContent = '❌ Senha incorreta!';
+                document.getElementById('msgErro').style.display = 'block';
+                document.getElementById('senha').value = '';
+            }
+        }
+
+        // Se já está logado, redireciona automaticamente
+        if (localStorage.getItem('admin_token')) {
+            window.location.href = 'admin.html';
+        }
+    </script>
+</body>
+</html>
