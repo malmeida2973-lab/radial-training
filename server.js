@@ -44,8 +44,10 @@ function gerarCodigoUnico() {
 function normalizarData(valor) {
   if (!valor || valor === '') return null;
   const valorStr = String(valor).trim();
+  
   // Se já estiver no formato ISO, retorna como está
   if (/^\d{4}-\d{2}-\d{2}$/.test(valorStr)) return valorStr;
+  
   // Converte de dd/mm/aaaa para aaaa-mm-dd
   const match = /^([0-3]?\d)\/([0-1]?\d)\/(\d{4})$/.exec(valorStr);
   if (match) {
@@ -54,16 +56,14 @@ function normalizarData(valor) {
     const mm = m.padStart(2, '0');
     return `${y}-${mm}-${dd}`;
   }
-  // Tenta converter se for objeto Date
-  if (valorStr.includes('T') || valorStr.includes('Z')) {
-    const date = new Date(valorStr);
-    if (!isNaN(date.getTime())) {
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}`;
-    }
+  
+  // Se vier do input type="date" do HTML, pode vir como "YYYY-MM-DD" mas como timestamp
+  // Extrai apenas a parte da data sem fazer conversão de timezone
+  if (valorStr.includes('-')) {
+    const justDate = valorStr.split('T')[0]; // Pega só YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(justDate)) return justDate;
   }
+  
   return valorStr; // fallback: deixa como veio
 }
 
