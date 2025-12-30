@@ -236,13 +236,17 @@ app.post('/api/cadastro', async (req, res) => {
        (treinamento_id, nome, email, telefone, funcao, area, empresa_participante, status, consentimento_lgpd, consentimento_aceite_em, consentimento_ip)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'cadastrado', $8, CURRENT_TIMESTAMP, $9)
        RETURNING id`,
-      [treinamento_id, nome, email, telefone, funcao, area, empresa_participante, Boolean(consentimento_lgpd), consentimento_ip]
+      [treinamento_id, nome, email, telefone || '', funcao || '', area || '', empresa_participante || '', Boolean(consentimento_lgpd), consentimento_ip || '']
     );
+
+    if (!result.rows || !result.rows[0]) {
+      return res.status(500).json({ erro: 'Erro ao inserir participante' });
+    }
 
     res.json({ sucesso: true, id: result.rows[0].id, ja_cadastrado: false });
   } catch (err) {
     console.error('Erro ao cadastrar participante:', err);
-    res.status(500).json({ erro: 'Erro ao cadastrar participante' });
+    res.status(500).json({ erro: 'Erro ao cadastrar participante: ' + err.message });
   }
 });
 

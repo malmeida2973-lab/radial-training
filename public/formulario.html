@@ -1016,6 +1016,7 @@
 
             <!-- ETAPA FINAL: Certificado -->
             <div id="etapaFinal" class="hide">
+                <button type="button" class="btn" onclick="voltarParaBusca()" style="background: #6c757d; margin-bottom: 20px;">← Voltar</button>
                 <h3 style="color: #2c7a7b; margin-bottom: 20px;">📜 Certificado de Participação</h3>
                 <div class="info-box" id="certInfo">
                     Verificando disponibilidade do certificado...
@@ -1101,8 +1102,7 @@
                     storageKey = `treinamento:${treinamentoId}:participante`;
                     mostrarInfoTreinamento(data);
                     
-                    // Mostrar modal LGPD antes de qualquer interação
-                    document.getElementById('modalLGPD').classList.add('show');
+                    // NÃO mostrar modal LGPD aqui, vai aparecer apenas quando clica em "Novo Cadastro"
                     document.getElementById('loading').classList.add('hide');
                     document.getElementById('conteudo').classList.remove('hide');
                     // Sempre iniciar na Etapa 1 para buscar/selecionar participante
@@ -1555,9 +1555,13 @@
             if (tipo === 'novo') {
                 document.getElementById('formBuscarCadastrado').classList.add('hide');
                 document.getElementById('formNovoCadastro').classList.remove('hide');
+                // Mostrar modal LGPD apenas para novo cadastro
+                document.getElementById('modalLGPD').classList.add('show');
             } else {
                 document.getElementById('formNovoCadastro').classList.add('hide');
                 document.getElementById('formBuscarCadastrado').classList.remove('hide');
+                // NÃO mostrar modal para cadastro existente
+                document.getElementById('modalLGPD').classList.remove('show');
             }
         }
 
@@ -1687,6 +1691,20 @@
             }
         `;
         document.head.appendChild(style);
+
+        // Voltar para a tela inicial
+        function voltarParaBusca() {
+            lgpdAceito = false;
+            limparParticipanteLocal();
+            participanteEmail = '';
+            participanteNome = '';
+            respostaAtualId = null;
+            mostrarEtapa(1);
+            document.getElementById('resultadoBusca').classList.add('hide');
+            document.getElementById('resultadoBusca').innerHTML = '';
+            document.getElementById('nomeBusca').value = '';
+            mostrarFormularioCadastro('buscar');
+        }
     </script>
 </body>
 </html>
