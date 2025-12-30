@@ -343,7 +343,12 @@ app.post('/api/cadastro', async (req, res) => {
     );
 
     if (existing) {
-      return res.json({ sucesso: true, id: existing.id, ja_cadastrado: true });
+      return res.status(409).json({
+        sucesso: false,
+        ja_cadastrado: true,
+        id: existing.id,
+        erro: 'Email já cadastrado para este treinamento'
+      });
     }
 
     const result = await dbRun(
@@ -500,11 +505,11 @@ app.get('/api/participante/:treinamento_id/:email', async (req, res) => {
 
 // Buscar participante por nome ou email (com LIKE para busca parcial)
 app.get('/api/buscar-participante/:treinamento_id/:termo', async (req, res) => {
-  const termoBusca = `%${req.params.termo}%`;
+  const termoBusca = (req.params.termo || '').trim();
   try {
     const rows = await dbAll(
-      'SELECT nome, email, empresa_participante, status FROM respostas WHERE treinamento_id = $1 AND (nome ILIKE $2 OR email ILIKE $3)',
-      [req.params.treinamento_id, termoBusca, termoBusca]
+      'SELECT nome, email, empresa_participante, status FROM respostas WHERE treinamento_id = $1 AND LOWER(email) = LOWER($2)',
+      [req.params.treinamento_id, termoBusca]
     );
     res.json(rows || []);
   } catch (err) {
