@@ -95,6 +95,31 @@ const initDB = async () => {
       )
     `);
 
+    // Adicionar colunas LGPD se não existirem (para migração)
+    try {
+      await client.query(`ALTER TABLE respostas ADD COLUMN consentimento_lgpd BOOLEAN DEFAULT FALSE`);
+    } catch (e) {
+      if (!e.message.includes('already exists')) {
+        throw e;
+      }
+    }
+
+    try {
+      await client.query(`ALTER TABLE respostas ADD COLUMN consentimento_aceite_em TIMESTAMP`);
+    } catch (e) {
+      if (!e.message.includes('already exists')) {
+        throw e;
+      }
+    }
+
+    try {
+      await client.query(`ALTER TABLE respostas ADD COLUMN consentimento_ip VARCHAR(45)`);
+    } catch (e) {
+      if (!e.message.includes('already exists')) {
+        throw e;
+      }
+    }
+
     await client.query('COMMIT');
     console.log('✅ Tabelas criadas/verificadas com sucesso no PostgreSQL');
   } catch (error) {
