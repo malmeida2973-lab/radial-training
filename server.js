@@ -127,8 +127,8 @@ app.get('/api/treinamentos', async (req, res) => {
 app.get('/api/treinamentos/:codigo', async (req, res) => {
   try {
     const row = await dbGet(
-      'SELECT * FROM treinamentos WHERE codigo_unico = $1 OR id = $2',
-      [req.params.codigo, req.params.codigo]
+      'SELECT * FROM treinamentos WHERE codigo_unico = $1 OR id::text = $1',
+      [req.params.codigo]
     );
 
     if (!row) {
