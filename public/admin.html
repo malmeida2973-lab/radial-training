@@ -1184,8 +1184,8 @@
                 } else {
                     // Contar por status
                     const stats = {
-                        cadastrado: respostas.filter(r => r.status === 'cadastrado').length,
-                        presente: respostas.filter(r => r.status === 'presente').length,
+                        total: respostas.length,
+                        presente: respostas.filter(r => r.status === 'presente' || r.status === 'avaliado').length,
                         avaliado: respostas.filter(r => r.status === 'avaliado').length
                     };
 
@@ -1193,7 +1193,7 @@
                         <h3>${titulo}</h3>
                         <div style="display: flex; gap: 20px; margin: 20px 0; justify-content: center;">
                             <div class="stat-card" style="flex: 1;">
-                                <div class="number" style="font-size: 1.5em;">${stats.cadastrado}</div>
+                                <div class="number" style="font-size: 1.5em;">${stats.total}</div>
                                 <div class="label">Cadastrados</div>
                             </div>
                             <div class="stat-card" style="flex: 1;">
