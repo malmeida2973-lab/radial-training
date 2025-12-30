@@ -28,6 +28,23 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
 // Criar tabelas se não existirem
 db.serialize(() => {
+  // Tabela de administradores
+  db.run(`
+    CREATE TABLE IF NOT EXISTS admin_users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT UNIQUE NOT NULL DEFAULT 'admin',
+      password TEXT NOT NULL DEFAULT 'radial123',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Inserir admin padrão se não existir
+  db.run(`
+    INSERT OR IGNORE INTO admin_users (id, username, password) 
+    VALUES (1, 'admin', 'radial123')
+  `);
+
   // Tabela de treinamentos
   db.run(`
     CREATE TABLE IF NOT EXISTS treinamentos (

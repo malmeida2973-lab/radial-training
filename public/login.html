@@ -160,24 +160,33 @@
     </div>
 
     <script>
-        function fazerLogin(event) {
+        async function fazerLogin(event) {
             event.preventDefault();
             const senha = document.getElementById('senha').value;
 
-            // Validação simples de senha
-            const senhaCorreta = 'radial123';
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: senha })
+                });
 
-            if (senha === senhaCorreta) {
-                // Salvar token de sessão no localStorage
-                localStorage.setItem('admin_token', btoa(new Date().getTime() + senha));
-                localStorage.setItem('admin_login', new Date().getTime());
-                
-                // Redirecionar para admin
-                window.location.href = 'admin.html';
-            } else {
-                document.getElementById('msgErro').textContent = '❌ Senha incorreta!';
+                if (response.ok) {
+                    // Salvar token de sessão no localStorage
+                    localStorage.setItem('admin_token', btoa(new Date().getTime() + senha));
+                    localStorage.setItem('admin_login', new Date().getTime());
+                    
+                    // Redirecionar para admin
+                    window.location.href = 'admin.html';
+                } else {
+                    const data = await response.json();
+                    document.getElementById('msgErro').textContent = '❌ ' + (data.erro || 'Senha incorreta!');
+                    document.getElementById('msgErro').style.display = 'block';
+                    document.getElementById('senha').value = '';
+                }
+            } catch (error) {
+                document.getElementById('msgErro').textContent = '❌ Erro ao fazer login';
                 document.getElementById('msgErro').style.display = 'block';
-                document.getElementById('senha').value = '';
             }
         }
 

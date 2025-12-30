@@ -455,6 +455,53 @@ app.delete('/api/treinamentos/:id', (req, res) => {
   });
 });
 
+// Login admin
+app.post('/api/admin/login', (req, res) => {
+  const { password } = req.body;
+  
+  db.get('SELECT * FROM admin_users WHERE id = 1', (err, admin) => {
+    if (err) {
+      return res.status(500).json({ erro: 'Erro ao verificar credenciais' });
+    }
+    
+    if (!admin || admin.password !== password) {
+      return res.status(401).json({ erro: 'Senha incorreta' });
+    }
+    
+    res.json({ sucesso: true, username: admin.username });
+  });
+});
+
+// Alterar senha admin
+app.post('/api/admin/change-password', (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ erro: 'Nova senha deve ter no mínimo 6 caracteres' });
+  }
+  
+  db.get('SELECT * FROM admin_users WHERE id = 1', (err, admin) => {
+    if (err) {
+      return res.status(500).json({ erro: 'Erro ao verificar senha atual' });
+    }
+    
+    if (!admin || admin.password !== currentPassword) {
+      return res.status(401).json({ erro: 'Senha atual incorreta' });
+    }
+    
+    db.run(
+      'UPDATE admin_users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1',
+      [newPassword],
+      (err) => {
+        if (err) {
+          return res.status(500).json({ erro: 'Erro ao atualizar senha' });
+        }
+        res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' });
+      }
+    );
+  });
+});
+
 // Exportar dados em formato CSV
 app.get('/api/exportar-csv', (req, res) => {
   const treinamentoId = req.query.treinamentoId;

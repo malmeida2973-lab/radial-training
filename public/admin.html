@@ -476,7 +476,10 @@
                     <p>Sistema de Gerenciamento de Treinamentos - Radial</p>
                 </div>
             </div>
-            <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="abrirModalSenha()" style="background: #FF5722; color: white;">🔐 Alterar Senha</button>
+                <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+            </div>
         </div>
 
         <div class="stats" id="stats"></div>
@@ -614,6 +617,36 @@
                 <span class="close-modal" onclick="fecharModalQR()">&times;</span>
             </div>
             <div id="conteudoQRCode"></div>
+        </div>
+    </div>
+
+    <!-- Modal de Alteração de Senha -->
+    <div id="modalSenha" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="fecharModalSenha()">&times;</span>
+            <h2 style="color: #0056B3; margin-bottom: 20px;">🔐 Alterar Senha do Admin</h2>
+            
+            <form id="formAlterarSenha" onsubmit="alterarSenha(event)">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Senha Atual:</label>
+                    <input type="password" id="senhaAtual" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Nova Senha:</label>
+                    <input type="password" id="novaSenha" required minlength="6" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                    <small style="color: #666;">Mínimo 6 caracteres</small>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Confirmar Nova Senha:</label>
+                    <input type="password" id="confirmarSenha" required minlength="6" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                </div>
+                
+                <div id="msgSenha" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 5px;"></div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">💾 Salvar Nova Senha</button>
+            </form>
         </div>
     </div>
 
@@ -1228,13 +1261,81 @@
         window.onclick = function(event) {
             const modalRespostas = document.getElementById('modalRespostas');
             const modalQRCode = document.getElementById('modalQRCode');
+            const modalSenha = document.getElementById('modalSenha');
             if (event.target === modalRespostas) {
                 fecharModal();
             }
             if (event.target === modalQRCode) {
                 fecharModalQR();
             }
+            if (event.target === modalSenha) {
+                fecharModalSenha();
+            }
         };
+
+        // Funções do Modal de Senha
+        function abrirModalSenha() {
+            document.getElementById('modalSenha').style.display = 'block';
+            document.getElementById('formAlterarSenha').reset();
+            document.getElementById('msgSenha').style.display = 'none';
+        }
+
+        function fecharModalSenha() {
+            document.getElementById('modalSenha').style.display = 'none';
+        }
+
+        async function alterarSenha(event) {
+            event.preventDefault();
+            
+            const senhaAtual = document.getElementById('senhaAtual').value;
+            const novaSenha = document.getElementById('novaSenha').value;
+            const confirmarSenha = document.getElementById('confirmarSenha').value;
+            const msgDiv = document.getElementById('msgSenha');
+            
+            // Validar se senhas coincidem
+            if (novaSenha !== confirmarSenha) {
+                msgDiv.textContent = '❌ As senhas não coincidem!';
+                msgDiv.style.background = '#f8d7da';
+                msgDiv.style.color = '#721c24';
+                msgDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        currentPassword: senhaAtual,
+                        newPassword: novaSenha 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    msgDiv.textContent = '✅ ' + data.mensagem;
+                    msgDiv.style.background = '#d4edda';
+                    msgDiv.style.color = '#155724';
+                    msgDiv.style.display = 'block';
+                    
+                    // Fechar modal após 2 segundos
+                    setTimeout(() => {
+                        fecharModalSenha();
+                    }, 2000);
+                } else {
+                    msgDiv.textContent = '❌ ' + data.erro;
+                    msgDiv.style.background = '#f8d7da';
+                    msgDiv.style.color = '#721c24';
+                    msgDiv.style.display = 'block';
+                }
+            } catch (error) {
+                msgDiv.textContent = '❌ Erro ao alterar senha';
+                msgDiv.style.background = '#f8d7da';
+                msgDiv.style.color = '#721c24';
+                msgDiv.style.display = 'block';
+            }
+        }
 
         // Inicializar
         carregarTreinamentos();
