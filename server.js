@@ -3,7 +3,6 @@ require('dotenv').config();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const QRCode = require('qrcode');
-const db = require('./database');
 const { dbRun, dbGet, dbAll } = require('./db-helpers');
 const path = require('path');
 const fs = require('fs');
@@ -48,463 +47,450 @@ app.post('/api/treinamentos', async (req, res) => {
   const { titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, exigir_pin } = req.body;
   const codigoUnico = gerarCodigoUnico();
   const pinPresenca = exigir_pin ? Math.floor(100000 + Math.random() * 900000).toString() : null;
+  try {
+    const insertQuery = `
+      INSERT INTO treinamentos (
+        titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local,
+        instrutor, instrutores_adicionais, codigo_unico, pin_presenca, exigir_pin,
+        nome_representante, telefone_representante, tecnicos
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8,
+        $9, $10, $11, $12, $13,
+        $14, $15, $16
+      ) RETURNING id`;
 
-  db.run(
-    `INSERT INTO treinamentos (titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, codigo_unico, pin_presenca, exigir_pin, nome_representante, telefone_representante, tecnicos) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, codigoUnico, pinPresenca, exigir_pin ? 1 : 0, nome_representante, telefone_representante, tecnicos],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao criar treinamento' });
-      }
-      
-      const treinamentoId = this.lastID;
-      const urlFormulario = `${req.protocol}://${req.get('host')}/formulario.html?t=${codigoUnico}`;
-      
-      // Gerar QR Code
-      QRCode.toDataURL(urlFormulario, (err, qrcode) => {
-        if (err) {
-          return res.status(500).json({ erro: 'Erro ao gerar QR Code' });
-        }
-        
-        res.json({
-          id: treinamentoId,
-          codigo: codigoUnico,
-          url: urlFormulario,
-          qrcode: qrcode,
-          pin_presenca: pinPresenca
-        });
-      });
-    }
-  );
+    const result = await dbRun(insertQuery, [
+      titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local,
+      instrutor, instrutores_adicionais, codigoUnico, pinPresenca, Boolean(exigir_pin),
+      nome_representante, telefone_representante, tecnicos
+    ]);
+
+    const treinamentoId = result.rows[0].id;
+    const urlFormulario = `${req.protocol}://${req.get('host')}/formulario.html?t=${codigoUnico}`;
+    const qrcode = await QRCode.toDataURL(urlFormulario);
+
+    res.json({
+      id: treinamentoId,
+      codigo: codigoUnico,
+      url: urlFormulario,
+      qrcode,
+      pin_presenca: pinPresenca
+    });
+  } catch (err) {
+    console.error('Erro ao criar treinamento:', err);
+    res.status(500).json({ erro: 'Erro ao criar treinamento' });
+  }
 });
 
 // Listar todos os treinamentos
-app.get('/api/treinamentos', (req, res) => {
-  db.all(
-    `SELECT t.*, COUNT(r.id) as total_respostas 
-     FROM treinamentos t 
-     LEFT JOIN respostas r ON t.id = r.treinamento_id 
-     GROUP BY t.id 
-     ORDER BY t.data DESC`,
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao buscar treinamentos' });
-      }
-      res.json(rows);
-    }
-  );
+app.get('/api/treinamentos', async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        t.*, 
+        COALESCE(r.total_respostas, 0) AS total_respostas
+      FROM treinamentos t
+      LEFT JOIN (
+        SELECT treinamento_id, COUNT(*) AS total_respostas
+        FROM respostas
+        GROUP BY treinamento_id
+      ) r ON t.id = r.treinamento_id
+      ORDER BY t.data DESC`;
+
+    const rows = await dbAll(query);
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar treinamentos:', err);
+    res.status(500).json({ erro: 'Erro ao buscar treinamentos' });
+  }
 });
 
 // Buscar treinamento por código
-app.get('/api/treinamentos/:codigo', (req, res) => {
-  db.get(
-    'SELECT * FROM treinamentos WHERE codigo_unico = ? OR id = ?',
-    [req.params.codigo, req.params.codigo],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao buscar treinamento' });
-      }
-      if (!row) {
-        return res.status(404).json({ erro: 'Treinamento não encontrado' });
-      }
-      res.json(row);
+app.get('/api/treinamentos/:codigo', async (req, res) => {
+  try {
+    const row = await dbGet(
+      'SELECT * FROM treinamentos WHERE codigo_unico = $1 OR id = $2',
+      [req.params.codigo, req.params.codigo]
+    );
+
+    if (!row) {
+      return res.status(404).json({ erro: 'Treinamento não encontrado' });
     }
-  );
+    res.json(row);
+  } catch (err) {
+    console.error('Erro ao buscar treinamento:', err);
+    res.status(500).json({ erro: 'Erro ao buscar treinamento' });
+  }
 });
 
 // Atualizar treinamento existente
-app.put('/api/treinamentos/:id', (req, res) => {
+app.put('/api/treinamentos/:id', async (req, res) => {
   const { titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, exigir_pin } = req.body;
-  
-  db.run(
-    `UPDATE treinamentos 
-     SET titulo = ?, empresa = ?, empresa_cliente = ?, data = ?, data_fim = ?, hora_inicio = ?, hora_fim = ?, local = ?, instrutor = ?, instrutores_adicionais = ?, nome_representante = ?, telefone_representante = ?, tecnicos = ?, exigir_pin = ?
-     WHERE id = ?`,
-    [titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, exigir_pin ? 1 : 0, req.params.id],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao atualizar treinamento' });
-      }
-      res.json({ sucesso: true, alteracoes: this.changes });
-    }
-  );
+  try {
+    const result = await dbRun(
+      `UPDATE treinamentos 
+       SET titulo = $1, empresa = $2, empresa_cliente = $3, data = $4, data_fim = $5, hora_inicio = $6, hora_fim = $7, local = $8, instrutor = $9, instrutores_adicionais = $10, nome_representante = $11, telefone_representante = $12, tecnicos = $13, exigir_pin = $14
+       WHERE id = $15`,
+      [titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, Boolean(exigir_pin), req.params.id]
+    );
+    res.json({ sucesso: true, alteracoes: result.rowCount });
+  } catch (err) {
+    console.error('Erro ao atualizar treinamento:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar treinamento' });
+  }
 });
 
 // Gerar QR Code para treinamento existente
 app.get('/api/treinamentos/:id/qrcode', async (req, res) => {
-  db.get(
-    'SELECT * FROM treinamentos WHERE id = ?',
-    [req.params.id],
-    (err, row) => {
-      if (err || !row) {
-        return res.status(404).json({ erro: 'Treinamento não encontrado' });
-      }
-      
-      const urlFormulario = `${req.protocol}://${req.get('host')}/formulario.html?t=${row.codigo_unico}`;
-      
-      QRCode.toDataURL(urlFormulario, (err, qrcode) => {
-        if (err) {
-          return res.status(500).json({ erro: 'Erro ao gerar QR Code' });
-        }
-        
-        res.json({
-          codigo: row.codigo_unico,
-          url: urlFormulario,
-          qrcode: qrcode,
-          pin_presenca: row.pin_presenca,
-          exigir_pin: row.exigir_pin
-        });
-      });
+  try {
+    const row = await dbGet('SELECT * FROM treinamentos WHERE id = $1', [req.params.id]);
+    if (!row) {
+      return res.status(404).json({ erro: 'Treinamento não encontrado' });
     }
-  );
+
+    const urlFormulario = `${req.protocol}://${req.get('host')}/formulario.html?t=${row.codigo_unico}`;
+    const qrcode = await QRCode.toDataURL(urlFormulario);
+
+    res.json({
+      codigo: row.codigo_unico,
+      url: urlFormulario,
+      qrcode,
+      pin_presenca: row.pin_presenca,
+      exigir_pin: row.exigir_pin
+    });
+  } catch (err) {
+    console.error('Erro ao gerar QR Code:', err);
+    res.status(500).json({ erro: 'Erro ao gerar QR Code' });
+  }
 });
 
 // Submeter resposta do formulário
-app.post('/api/respostas', (req, res) => {
+app.post('/api/respostas', async (req, res) => {
   const {
     treinamento_id, nome, email, telefone, funcao, area, empresa_participante,
     avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes
   } = req.body;
-
-  db.run(
-    `INSERT INTO respostas 
-     (treinamento_id, nome, email, telefone, funcao, area, empresa_participante,
-      avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [treinamento_id, nome, email, telefone, funcao, area, empresa_participante,
-     avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes],
-    function(err) {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ erro: 'Erro ao salvar resposta' });
-      }
-      res.json({ sucesso: true, id: this.lastID });
-    }
-  );
+  try {
+    const result = await dbRun(
+      `INSERT INTO respostas 
+       (treinamento_id, nome, email, telefone, funcao, area, empresa_participante,
+        avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING id`,
+      [treinamento_id, nome, email, telefone, funcao, area, empresa_participante,
+       avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes]
+    );
+    res.json({ sucesso: true, id: result.rows[0].id });
+  } catch (err) {
+    console.error('Erro ao salvar resposta:', err);
+    res.status(500).json({ erro: 'Erro ao salvar resposta' });
+  }
 });
 
 // ETAPA 1: Cadastro pré-treinamento
-app.post('/api/cadastro', (req, res) => {
+app.post('/api/cadastro', async (req, res) => {
   const { treinamento_id, nome, email, telefone, funcao, area, empresa_participante } = req.body;
+  try {
+    const existing = await dbGet(
+      'SELECT * FROM respostas WHERE treinamento_id = $1 AND email = $2',
+      [treinamento_id, email]
+    );
 
-  // Verificar se já está cadastrado
-  db.get(
-    'SELECT * FROM respostas WHERE treinamento_id = ? AND email = ?',
-    [treinamento_id, email],
-    (err, row) => {
-      if (row) {
-        return res.json({ sucesso: true, id: row.id, ja_cadastrado: true });
-      }
-
-      db.run(
-        `INSERT INTO respostas 
-         (treinamento_id, nome, email, telefone, funcao, area, empresa_participante, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'cadastrado')`,
-        [treinamento_id, nome, email, telefone, funcao, area, empresa_participante],
-        function(err) {
-          if (err) {
-            console.error(err);
-            return res.status(500).json({ erro: 'Erro ao cadastrar participante' });
-          }
-          res.json({ sucesso: true, id: this.lastID, ja_cadastrado: false });
-        }
-      );
+    if (existing) {
+      return res.json({ sucesso: true, id: existing.id, ja_cadastrado: true });
     }
-  );
+
+    const result = await dbRun(
+      `INSERT INTO respostas 
+       (treinamento_id, nome, email, telefone, funcao, area, empresa_participante, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'cadastrado')
+       RETURNING id`,
+      [treinamento_id, nome, email, telefone, funcao, area, empresa_participante]
+    );
+
+    res.json({ sucesso: true, id: result.rows[0].id, ja_cadastrado: false });
+  } catch (err) {
+    console.error('Erro ao cadastrar participante:', err);
+    res.status(500).json({ erro: 'Erro ao cadastrar participante' });
+  }
 });
 
 // ETAPA 2: Confirmar presença
-app.post('/api/presenca', (req, res) => {
+app.post('/api/presenca', async (req, res) => {
   const { treinamento_id, email, pin_fornecido } = req.body;
-
-  // Buscar dados do treinamento
-  db.get(
-    'SELECT * FROM treinamentos WHERE id = ?',
-    [treinamento_id],
-    (err, treinamento) => {
-      if (err || !treinamento) {
-        return res.status(404).json({ erro: 'Treinamento não encontrado' });
-      }
-
-      // Verificar PIN se necessário
-      if (treinamento.exigir_pin && pin_fornecido !== treinamento.pin_presenca) {
-        return res.status(401).json({ erro: 'PIN de presença inválido', exigir_pin: true });
-      }
-
-      // Confirmar presença
-      db.run(
-        `UPDATE respostas 
-         SET presente = 1, presenca_em = CURRENT_TIMESTAMP, status = 'presente'
-         WHERE treinamento_id = ? AND email = ?`,
-        [treinamento_id, email],
-        function(err) {
-          if (err) {
-            return res.status(500).json({ erro: 'Erro ao confirmar presença' });
-          }
-          if (this.changes === 0) {
-            return res.status(404).json({ erro: 'Participante não encontrado' });
-          }
-          res.json({ sucesso: true });
-        }
-      );
+  try {
+    const treinamento = await dbGet('SELECT * FROM treinamentos WHERE id = $1', [treinamento_id]);
+    if (!treinamento) {
+      return res.status(404).json({ erro: 'Treinamento não encontrado' });
     }
-  );
+
+    if (treinamento.exigir_pin && pin_fornecido !== treinamento.pin_presenca) {
+      return res.status(401).json({ erro: 'PIN de presença inválido', exigir_pin: true });
+    }
+
+    const result = await dbRun(
+      `UPDATE respostas 
+       SET presente = TRUE, presenca_em = CURRENT_TIMESTAMP, status = 'presente'
+       WHERE treinamento_id = $1 AND email = $2`,
+      [treinamento_id, email]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ erro: 'Participante não encontrado' });
+    }
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao confirmar presença:', err);
+    res.status(500).json({ erro: 'Erro ao confirmar presença' });
+  }
 });
 
 // ETAPA 3: Submeter avaliação
-app.post('/api/avaliacao', (req, res) => {
+app.post('/api/avaliacao', async (req, res) => {
   const {
     treinamento_id, email,
     avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes
   } = req.body;
+  try {
+    const result = await dbRun(
+      `UPDATE respostas 
+       SET avaliacao_geral = $1, avaliacao_conteudo = $2, avaliacao_instrutor = $3, 
+           avaliacao_material = $4, sugestoes = $5, avaliado_em = CURRENT_TIMESTAMP, status = 'avaliado'
+       WHERE treinamento_id = $6 AND email = $7`,
+      [avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes, treinamento_id, email]
+    );
 
-  db.run(
-    `UPDATE respostas 
-     SET avaliacao_geral = ?, avaliacao_conteudo = ?, avaliacao_instrutor = ?, 
-         avaliacao_material = ?, sugestoes = ?, avaliado_em = CURRENT_TIMESTAMP, status = 'avaliado'
-     WHERE treinamento_id = ? AND email = ?`,
-    [avaliacao_geral, avaliacao_conteudo, avaliacao_instrutor, avaliacao_material, sugestoes, treinamento_id, email],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao salvar avaliação' });
-      }
-      if (this.changes === 0) {
-        return res.status(404).json({ erro: 'Participante não encontrado' });
-      }
-      res.json({ sucesso: true });
+    if (result.rowCount === 0) {
+      return res.status(404).json({ erro: 'Participante não encontrado' });
     }
-  );
+
+    res.json({ sucesso: true });
+  } catch (err) {
+    console.error('Erro ao salvar avaliação:', err);
+    res.status(500).json({ erro: 'Erro ao salvar avaliação' });
+  }
 });
 
 // Verificar status do participante
-app.get('/api/participante/:treinamento_id/:email', (req, res) => {
-  db.get(
-    'SELECT * FROM respostas WHERE treinamento_id = ? AND email = ?',
-    [req.params.treinamento_id, req.params.email],
-    (err, row) => {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao buscar participante' });
-      }
-      res.json(row || { status: 'nao_cadastrado' });
-    }
-  );
+app.get('/api/participante/:treinamento_id/:email', async (req, res) => {
+  try {
+    const row = await dbGet(
+      'SELECT * FROM respostas WHERE treinamento_id = $1 AND email = $2',
+      [req.params.treinamento_id, req.params.email]
+    );
+    res.json(row || { status: 'nao_cadastrado' });
+  } catch (err) {
+    console.error('Erro ao buscar participante:', err);
+    res.status(500).json({ erro: 'Erro ao buscar participante' });
+  }
 });
 
 // Buscar participante por nome ou email (com LIKE para busca parcial)
-app.get('/api/buscar-participante/:treinamento_id/:termo', (req, res) => {
+app.get('/api/buscar-participante/:treinamento_id/:termo', async (req, res) => {
   const termoBusca = `%${req.params.termo}%`;
-  db.all(
-    'SELECT nome, email, empresa_participante, status FROM respostas WHERE treinamento_id = ? AND (nome LIKE ? OR email LIKE ?)',
-    [req.params.treinamento_id, termoBusca, termoBusca],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao buscar participante' });
-      }
-      res.json(rows || []);
-    }
-  );
+  try {
+    const rows = await dbAll(
+      'SELECT nome, email, empresa_participante, status FROM respostas WHERE treinamento_id = $1 AND (nome ILIKE $2 OR email ILIKE $3)',
+      [req.params.treinamento_id, termoBusca, termoBusca]
+    );
+    res.json(rows || []);
+  } catch (err) {
+    console.error('Erro ao buscar participante:', err);
+    res.status(500).json({ erro: 'Erro ao buscar participante' });
+  }
 });
 
 // Buscar respostas de um treinamento
-app.get('/api/treinamentos/:id/respostas', (req, res) => {
-  db.all(
-    'SELECT * FROM respostas WHERE treinamento_id = ? ORDER BY cadastrado_em DESC',
-    [req.params.id],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao buscar respostas' });
-      }
-      res.json(rows);
-    }
-  );
+app.get('/api/treinamentos/:id/respostas', async (req, res) => {
+  try {
+    const rows = await dbAll(
+      'SELECT * FROM respostas WHERE treinamento_id = $1 ORDER BY cadastrado_em DESC',
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('Erro ao buscar respostas:', err);
+    res.status(500).json({ erro: 'Erro ao buscar respostas' });
+  }
 });
 
 // Upload de certificado (Admin): associa arquivo a uma resposta específica
-app.post('/api/respostas/:id/certificado', upload.single('certificado'), (req, res) => {
+app.post('/api/respostas/:id/certificado', upload.single('certificado'), async (req, res) => {
   const respostaId = req.params.id;
   if (!req.file) {
     return res.status(400).json({ erro: 'Arquivo de certificado não enviado' });
   }
 
-  db.run(
-    'UPDATE respostas SET certificado_arquivo = ? WHERE id = ?',
-    [req.file.filename, respostaId],
-    function (err) {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao salvar certificado' });
-      }
-      // Tentar enviar e-mail ao participante com o certificado anexado
-      try {
-        db.get(
-          'SELECT r.email, r.nome, t.titulo, t.empresa FROM respostas r JOIN treinamentos t ON r.treinamento_id = t.id WHERE r.id = ?',
-          [respostaId],
-          async (e2, row) => {
-            if (!e2 && row && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-              const nodemailer = require('nodemailer');
-              const transporter = nodemailer.createTransport({
-                host: process.env.SMTP_HOST,
-                port: Number(process.env.SMTP_PORT || 587),
-                secure: Boolean(process.env.SMTP_SECURE === 'true'),
-                auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-              });
+  try {
+    await dbRun('UPDATE respostas SET certificado_arquivo = $1 WHERE id = $2', [req.file.filename, respostaId]);
 
-              const filePath = path.join(uploadDir, req.file.filename);
-              const subject = `Certificado - ${row.titulo}`;
-              const from = process.env.SMTP_FROM || process.env.SMTP_USER;
-              try {
-                await transporter.sendMail({
-                  from,
-                  to: row.email,
-                  subject,
-                  text: `Olá ${row.nome},\n\nSeu certificado do treinamento "${row.titulo}" (${row.empresa}) está em anexo.\n\nObrigado pela participação!\n`,
-                  attachments: [
-                    { filename: `${(row.nome || 'certificado').replace(/[^a-zA-Z0-9_\- ]/g, '')}_certificado.pdf`, path: filePath }
-                  ]
-                });
-                console.log(`📧 Certificado enviado para ${row.email}`);
-              } catch (mailErr) {
-                console.warn('Falha ao enviar certificado por e-mail:', mailErr.message);
-              }
-            } else if (!process.env.SMTP_HOST) {
-              console.log('SMTP não configurado; pulando envio de e-mail.');
-            }
-            res.json({ sucesso: true, arquivo: req.file.filename });
-          }
-        );
-      } catch (emailErr) {
-        console.warn('Erro no fluxo de envio de e-mail:', emailErr.message);
-        res.json({ sucesso: true, arquivo: req.file.filename });
+    try {
+      const row = await dbGet(
+        'SELECT r.email, r.nome, t.titulo, t.empresa FROM respostas r JOIN treinamentos t ON r.treinamento_id = t.id WHERE r.id = $1',
+        [respostaId]
+      );
+
+      if (row && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+        const nodemailer = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: Number(process.env.SMTP_PORT || 587),
+          secure: Boolean(process.env.SMTP_SECURE === 'true'),
+          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+        });
+
+        const filePath = path.join(uploadDir, req.file.filename);
+        const subject = `Certificado - ${row.titulo}`;
+        const from = process.env.SMTP_FROM || process.env.SMTP_USER;
+
+        try {
+          await transporter.sendMail({
+            from,
+            to: row.email,
+            subject,
+            text: `Olá ${row.nome},\n\nSeu certificado do treinamento "${row.titulo}" (${row.empresa}) está em anexo.\n\nObrigado pela participação!\n`,
+            attachments: [
+              { filename: `${(row.nome || 'certificado').replace(/[^a-zA-Z0-9_\- ]/g, '')}_certificado.pdf`, path: filePath }
+            ]
+          });
+          console.log(`📧 Certificado enviado para ${row.email}`);
+        } catch (mailErr) {
+          console.warn('Falha ao enviar certificado por e-mail:', mailErr.message);
+        }
+      } else if (!process.env.SMTP_HOST) {
+        console.log('SMTP não configurado; pulando envio de e-mail.');
       }
+    } catch (emailErr) {
+      console.warn('Erro no fluxo de envio de e-mail:', emailErr.message);
     }
-  );
+
+    res.json({ sucesso: true, arquivo: req.file.filename });
+  } catch (err) {
+    console.error('Erro ao salvar certificado:', err);
+    res.status(500).json({ erro: 'Erro ao salvar certificado' });
+  }
 });
 
 // Download de certificado por resposta (Admin)
-app.get('/api/respostas/:id/certificado', (req, res) => {
-  db.get('SELECT certificado_arquivo FROM respostas WHERE id = ?', [req.params.id], (err, row) => {
-    if (err || !row) return res.status(404).json({ erro: 'Certificado não encontrado' });
+app.get('/api/respostas/:id/certificado', async (req, res) => {
+  try {
+    const row = await dbGet('SELECT certificado_arquivo FROM respostas WHERE id = $1', [req.params.id]);
+    if (!row) return res.status(404).json({ erro: 'Certificado não encontrado' });
     if (!row.certificado_arquivo) return res.status(404).json({ erro: 'Certificado não enviado' });
     const filePath = path.join(uploadDir, row.certificado_arquivo);
     if (!fs.existsSync(filePath)) return res.status(404).json({ erro: 'Arquivo de certificado ausente' });
     res.download(filePath);
-  });
+  } catch (err) {
+    console.error('Erro ao baixar certificado:', err);
+    res.status(500).json({ erro: 'Erro ao baixar certificado' });
+  }
 });
 
 // Download de certificado por treinamento+email (Participante)
-app.get('/api/certificado/:treinamento_id/:email', (req, res) => {
+app.get('/api/certificado/:treinamento_id/:email', async (req, res) => {
   const { treinamento_id, email } = req.params;
-  db.get(
-    'SELECT nome, certificado_arquivo FROM respostas WHERE treinamento_id = ? AND email = ?',
-    [treinamento_id, email],
-    (err, row) => {
-      if (err || !row) return res.status(404).json({ erro: 'Participante não encontrado' });
-      if (!row.certificado_arquivo) return res.status(404).json({ erro: 'Certificado ainda não disponível' });
-      const filePath = path.join(uploadDir, row.certificado_arquivo);
-      if (!fs.existsSync(filePath)) return res.status(404).json({ erro: 'Arquivo de certificado ausente' });
-      const safeName = (row.nome || 'certificado').replace(/[^a-zA-Z0-9_\- ]/g, '');
-      res.download(filePath, `${safeName}_certificado.pdf`);
-    }
-  );
+  try {
+    const row = await dbGet(
+      'SELECT nome, certificado_arquivo FROM respostas WHERE treinamento_id = $1 AND email = $2',
+      [treinamento_id, email]
+    );
+    if (!row) return res.status(404).json({ erro: 'Participante não encontrado' });
+    if (!row.certificado_arquivo) return res.status(404).json({ erro: 'Certificado ainda não disponível' });
+    const filePath = path.join(uploadDir, row.certificado_arquivo);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ erro: 'Arquivo de certificado ausente' });
+    const safeName = (row.nome || 'certificado').replace(/[^a-zA-Z0-9_\- ]/g, '');
+    res.download(filePath, `${safeName}_certificado.pdf`);
+  } catch (err) {
+    console.error('Erro ao baixar certificado:', err);
+    res.status(500).json({ erro: 'Erro ao baixar certificado' });
+  }
 });
 
 // Atualizar participante
-app.put('/api/respostas/:id', (req, res) => {
+app.put('/api/respostas/:id', async (req, res) => {
   const { nome, email, telefone, funcao, area, empresa_participante } = req.body;
-  db.run(
-    `UPDATE respostas 
-     SET nome = ?, email = ?, telefone = ?, funcao = ?, area = ?, empresa_participante = ?
-     WHERE id = ?`,
-    [nome, email, telefone, funcao, area, empresa_participante, req.params.id],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao atualizar participante' });
-      }
-      res.json({ sucesso: true, alteracoes: this.changes });
-    }
-  );
+  try {
+    const result = await dbRun(
+      `UPDATE respostas 
+       SET nome = $1, email = $2, telefone = $3, funcao = $4, area = $5, empresa_participante = $6
+       WHERE id = $7`,
+      [nome, email, telefone, funcao, area, empresa_participante, req.params.id]
+    );
+    res.json({ sucesso: true, alteracoes: result.rowCount });
+  } catch (err) {
+    console.error('Erro ao atualizar participante:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar participante' });
+  }
 });
 
 // Excluir participante
-app.delete('/api/respostas/:id', (req, res) => {
-  db.run(
-    'DELETE FROM respostas WHERE id = ?',
-    [req.params.id],
-    function(err) {
-      if (err) {
-        return res.status(500).json({ erro: 'Erro ao excluir participante' });
-      }
-      res.json({ sucesso: true, removidos: this.changes });
-    }
-  );
+app.delete('/api/respostas/:id', async (req, res) => {
+  try {
+    const result = await dbRun('DELETE FROM respostas WHERE id = $1', [req.params.id]);
+    res.json({ sucesso: true, removidos: result.rowCount });
+  } catch (err) {
+    console.error('Erro ao excluir participante:', err);
+    res.status(500).json({ erro: 'Erro ao excluir participante' });
+  }
 });
 
 // Excluir treinamento (e respostas relacionadas)
-app.delete('/api/treinamentos/:id', (req, res) => {
-  db.serialize(() => {
-    db.run('DELETE FROM respostas WHERE treinamento_id = ?', [req.params.id]);
-    db.run(
-      'DELETE FROM treinamentos WHERE id = ?',
-      [req.params.id],
-      function(err) {
-        if (err) {
-          return res.status(500).json({ erro: 'Erro ao excluir treinamento' });
-        }
-        res.json({ sucesso: true, removidos: this.changes });
-      }
-    );
-  });
+app.delete('/api/treinamentos/:id', async (req, res) => {
+  try {
+    await dbRun('DELETE FROM respostas WHERE treinamento_id = $1', [req.params.id]);
+    const result = await dbRun('DELETE FROM treinamentos WHERE id = $1', [req.params.id]);
+    res.json({ sucesso: true, removidos: result.rowCount });
+  } catch (err) {
+    console.error('Erro ao excluir treinamento:', err);
+    res.status(500).json({ erro: 'Erro ao excluir treinamento' });
+  }
 });
 
 // Login admin
-app.post('/api/admin/login', (req, res) => {
+app.post('/api/admin/login', async (req, res) => {
   const { password } = req.body;
-  
-  db.get('SELECT * FROM admin_users WHERE id = 1', (err, admin) => {
-    if (err) {
-      return res.status(500).json({ erro: 'Erro ao verificar credenciais' });
-    }
-    
+
+  try {
+    const admin = await dbGet('SELECT * FROM admin_users WHERE id = 1');
     if (!admin || admin.password !== password) {
       return res.status(401).json({ erro: 'Senha incorreta' });
     }
-    
     res.json({ sucesso: true, username: admin.username });
-  });
+  } catch (err) {
+    console.error('Erro ao verificar credenciais:', err);
+    res.status(500).json({ erro: 'Erro ao verificar credenciais' });
+  }
 });
 
 // Alterar senha admin
-app.post('/api/admin/change-password', (req, res) => {
+app.post('/api/admin/change-password', async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   
   if (!newPassword || newPassword.length < 6) {
     return res.status(400).json({ erro: 'Nova senha deve ter no mínimo 6 caracteres' });
   }
-  
-  db.get('SELECT * FROM admin_users WHERE id = 1', (err, admin) => {
-    if (err) {
-      return res.status(500).json({ erro: 'Erro ao verificar senha atual' });
-    }
-    
+
+  try {
+    const admin = await dbGet('SELECT * FROM admin_users WHERE id = 1');
     if (!admin || admin.password !== currentPassword) {
       return res.status(401).json({ erro: 'Senha atual incorreta' });
     }
-    
-    db.run(
-      'UPDATE admin_users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1',
-      [newPassword],
-      (err) => {
-        if (err) {
-          return res.status(500).json({ erro: 'Erro ao atualizar senha' });
-        }
-        res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' });
-      }
+
+    await dbRun(
+      'UPDATE admin_users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = 1',
+      [newPassword]
     );
-  });
+
+    res.json({ sucesso: true, mensagem: 'Senha alterada com sucesso!' });
+  } catch (err) {
+    console.error('Erro ao atualizar senha:', err);
+    res.status(500).json({ erro: 'Erro ao atualizar senha' });
+  }
 });
 
 // Exportar dados em formato CSV
-app.get('/api/exportar-csv', (req, res) => {
+app.get('/api/exportar-csv', async (req, res) => {
   const treinamentoId = req.query.treinamentoId;
   const titulo = req.query.titulo || 'treinamento';
   
@@ -536,29 +522,22 @@ app.get('/api/exportar-csv', (req, res) => {
       CASE WHEN r.certificado_arquivo IS NOT NULL THEN 'Sim' ELSE 'Não' END as "Certificado Enviado"
      FROM respostas r
      JOIN treinamentos t ON r.treinamento_id = t.id
-     WHERE r.treinamento_id = ?
+     WHERE r.treinamento_id = $1
      ORDER BY r.cadastrado_em DESC`;
   
-  db.all(query, [treinamentoId], (err, rows) => {
-    if (err) {
-      console.error('Erro ao exportar CSV:', err);
-      console.error('Query:', query);
-      console.error('TreinamentoId:', treinamentoId);
-      return res.status(500).json({ erro: 'Erro ao exportar dados: ' + err.message });
-    }
+  try {
+    const rows = await dbAll(query, [treinamentoId]);
 
     if (rows.length === 0) {
       return res.status(404).send('Nenhum participante cadastrado neste treinamento');
     }
 
-    // Criar CSV com colunas organizadas
     const headers = Object.keys(rows[0]);
-    const csvHeaders = headers.join(';'); // Usar ponto e vírgula para melhor compatibilidade com Excel
+    const csvHeaders = headers.join(';');
     
     const csvRows = rows.map(row => 
       headers.map(header => {
         const val = row[header] || '';
-        // Escapar aspas duplas e adicionar aspas se contiver vírgula, ponto-e-vírgula ou quebra de linha
         const stringVal = String(val).replace(/"/g, '""');
         return `"${stringVal}"`;
       }).join(';')
@@ -566,14 +545,16 @@ app.get('/api/exportar-csv', (req, res) => {
     
     const csv = [csvHeaders, ...csvRows].join('\r\n');
     
-    // Nome do arquivo baseado no título do treinamento
     const nomeArquivo = titulo.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const dataExport = new Date().toISOString().split('T')[0];
     
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=radial_training_${nomeArquivo}_${dataExport}.csv`);
-    res.send('\ufeff' + csv); // BOM para UTF-8 (Excel reconhece acentos)
-  });
+    res.send('\ufeff' + csv);
+  } catch (err) {
+    console.error('Erro ao exportar CSV:', err);
+    res.status(500).json({ erro: 'Erro ao exportar dados: ' + err.message });
+  }
 });
 
 // Iniciar servidor

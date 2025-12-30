@@ -40,16 +40,14 @@ git push -u origin main
 - Configurar DNS no seu provedor
 
 #### Variáveis de Ambiente:
-Já configuradas no `render.yaml`, mas você pode adicionar:
-- `ADMIN_PASSWORD` - Senha para admin
-- `EMAIL_HOST` - Para envio de emails
+- `DATABASE_URL` (Postgres do Render) — obrigatório para produção
+- `NODE_ENV=production`
+- SMTP (opcional para envio de certificados): `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
 
-### 4️⃣ Banco de Dados SQLite
+### 4️⃣ Banco de Dados PostgreSQL
 
-O Render usa **disco persistente** configurado:
-- Path: `/opt/render/project/src/data`
-- Tamanho: 1GB (gratuito)
-- Backups manuais disponíveis
+- Adicione o add-on Postgres do Render e copie a `DATABASE_URL` para o serviço.
+- O `database.js` cria as tabelas automaticamente na primeira execução.
 
 ### ⚡ Comandos Git Úteis
 
@@ -98,11 +96,12 @@ Use serviço gratuito de ping:
 npm install
 ```
 
-**Banco não persiste:**
-- Verificar se disco está montado em Settings
+**Banco não conecta:**
+- Confirme a `DATABASE_URL` no serviço Render
+- Garanta `NODE_ENV=production`
 
 **Certificados não aparecem:**
-- Ajustar path para `/opt/render/project/src/uploads`
+- Ajuste path para `/opt/render/project/src/uploads`
 
 ---
 

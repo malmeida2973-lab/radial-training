@@ -1,6 +1,6 @@
 # 🚂 Deploy no Railway - Guia Completo
 
-> Sistema Radial Training rodando com banco de dados persistente - **TOTALMENTE GRÁTIS!**
+> Sistema Radial Training rodando com banco de dados persistente (PostgreSQL) - **TOTALMENTE GRÁTIS!**
 
 ## ✅ Resumo Rápido
 
@@ -46,25 +46,18 @@ O Railway vai:
 
 ## 🗄️ Configurar Banco de Dados (Persistente)
 
-### Opção A: SQLite (Recomendado para sua demanda)
+### PostgreSQL (Padrão e recomendado)
 
 1. **No Dashboard Railway:**
-   - Clique no seu serviço `radial-training`
-   - Vá em **"Data"**
-   - Clique em **"Create Database"**
-   - Selecione **"PostgreSQL"**
-   - Aguarde criar
+   - Clique no projeto e em **"New"** → **"Database"** → **"PostgreSQL"**
+   - Aguarde 1 minuto para provisionar
 
-2. **Railway conecta automaticamente!**
-   - Variáveis de ambiente já configuradas
-   - Seu `database.js` detecta automaticamente
+2. **Variável `DATABASE_URL`:**
+   - O Railway injeta automaticamente no serviço Node
+   - `database.js` usa essa URL e cria as tabelas na primeira execução
 
-### Opção B: Usar SQLite Local (Mais Simples)
-
-Seu sistema já usa SQLite! Railway automaticamente:
-- ✅ Monta volume persistente
-- ✅ Dados salvos permanentemente
-- ✅ Sem configuração extra
+3. **Nada extra a fazer:**
+   - Dados ficam persistentes e gerenciados pelo PostgreSQL do Railway
 
 ---
 
@@ -99,10 +92,9 @@ https://radial-training-production-xxxx.up.railway.app
 ## 💾 Dados Persistentes
 
 Railway automaticamente:
-- ✅ Salva banco SQLite em volume
+- ✅ Hospeda o PostgreSQL gerenciado
 - ✅ Persiste entre reinicializações
-- ✅ Backups automáticos
-- ✅ Sem limite de armazenamento (no plano free)
+- ✅ Backups/retention via painel do Railway
 
 ---
 

@@ -4,7 +4,7 @@
 
 1. **✅ Adicionado `pg` ao package.json**
 2. **✅ Criado database.js com PostgreSQL**
-3. **⏳ Server.js precisa ajustes** (muitas queries)
+3. **✅ Server.js convertido totalmente para PostgreSQL (queries com `$1`, `RETURNING`, async/await)**
 
 ## 🚀 Próximos Passos:
 
@@ -34,9 +34,9 @@ git push
 ### 4️⃣ Aguardar Deploy:
 
 Railway vai:
-- Instalar `pg`
+- Instalar dependências
 - Conectar ao PostgreSQL
-- Criar tabelas automaticamente
+- Criar tabelas automaticamente via `database.js`
 - Sistema funcionando! 🎉
 
 ---
@@ -52,14 +52,17 @@ Railway vai:
 
 ## 🔙 Rollback (se necessário):
 
-Se quiser voltar para SQLite local:
+Se quiser voltar temporariamente ao SQLite local (apenas para desenvolvimento):
 
 ```bash
+Move-Item server-sqlite.js.bak server.js -Force
 Move-Item database-sqlite.js.bak database.js -Force
-git add database.js
-git commit -m "Voltar para SQLite"
+git add server.js database.js
+git commit -m "Rollback para SQLite"
 git push
 ```
+
+Em produção, mantenha o PostgreSQL para persistência.
 
 ---
 
