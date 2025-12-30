@@ -61,13 +61,29 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-function parseSender(str) {
-  if (!str) return { email: 'nao-responda@radialtraining.com.br', name: 'Radial Training' };
-  const match = /^(.*)<([^>]+)>$/.exec(str.trim());
-  if (match) {
-    return { name: match[1].trim() || undefined, email: match[2].trim() };
+function parseSender(raw) {
+  const fallback = { email: 'nao-responda@radialtraining.com.br', name: 'Radial Training' };
+  if (!raw) return fallback;
+
+  // Remove aspas ao redor se houver
+  let str = raw.trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
   }
-  return { email: str.trim(), name: undefined };
+
+  const match = /^(.*)<([^>]+)>$/.exec(str);
+  if (match) {
+    const email = match[2].trim();
+    const name = match[1].trim() || undefined;
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { email, name };
+    return fallback;
+  }
+
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str)) {
+    return { email: str, name: undefined };
+  }
+
+  return fallback;
 }
 
 async function enviarEmail({ to, subject, html, text, attachments }) {
