@@ -1423,11 +1423,11 @@
                     document.getElementById('step3').classList.add('completed');
                     mostrarBannerVitoria();
                     lancarConfete();
-                    // Aguardar 3.5 segundos antes de ir para etapa final
+                    // Aguardar 9 segundos antes de ir para etapa final (deixa o banner visível)
                     setTimeout(() => {
                         mostrarEtapa(4);
                         atualizarEstadoCertificado();
-                    }, 3500);
+                    }, 9000);
                 } else {
                     throw new Error('Erro ao enviar avaliação');
                 }
@@ -1644,19 +1644,30 @@
         }
 
         // Banner de Vitória
+        let bannerAutoCloseTimeout = null;
+
         function mostrarBannerVitoria() {
             const modal = document.getElementById('bannerVitoria');
             if (modal) {
                 modal.classList.add('show');
-                setTimeout(() => {
+                // Cancelar timeout anterior se existir
+                if (bannerAutoCloseTimeout) {
+                    clearTimeout(bannerAutoCloseTimeout);
+                }
+                // Fechar automaticamente após 8 segundos
+                bannerAutoCloseTimeout = setTimeout(() => {
                     modal.classList.remove('show');
-                }, 3000);
+                }, 8000);
             }
         }
 
         function fecharBannerVitoria() {
             const modal = document.getElementById('bannerVitoria');
             if (modal) {
+                // Cancelar auto-close
+                if (bannerAutoCloseTimeout) {
+                    clearTimeout(bannerAutoCloseTimeout);
+                }
                 modal.classList.remove('show');
             }
         }
