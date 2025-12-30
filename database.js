@@ -97,27 +97,21 @@ const initDB = async () => {
 
     // Adicionar colunas LGPD se não existirem (para migração)
     try {
-      await client.query(`ALTER TABLE respostas ADD COLUMN consentimento_lgpd BOOLEAN DEFAULT FALSE`);
+      await client.query(`ALTER TABLE respostas ADD COLUMN IF NOT EXISTS consentimento_lgpd BOOLEAN DEFAULT FALSE`);
     } catch (e) {
-      if (!e.message.includes('already exists')) {
-        throw e;
-      }
+      console.log('Coluna consentimento_lgpd: ', e.message);
     }
 
     try {
-      await client.query(`ALTER TABLE respostas ADD COLUMN consentimento_aceite_em TIMESTAMP`);
+      await client.query(`ALTER TABLE respostas ADD COLUMN IF NOT EXISTS consentimento_aceite_em TIMESTAMP`);
     } catch (e) {
-      if (!e.message.includes('already exists')) {
-        throw e;
-      }
+      console.log('Coluna consentimento_aceite_em: ', e.message);
     }
 
     try {
-      await client.query(`ALTER TABLE respostas ADD COLUMN consentimento_ip VARCHAR(45)`);
+      await client.query(`ALTER TABLE respostas ADD COLUMN IF NOT EXISTS consentimento_ip VARCHAR(45)`);
     } catch (e) {
-      if (!e.message.includes('already exists')) {
-        throw e;
-      }
+      console.log('Coluna consentimento_ip: ', e.message);
     }
 
     await client.query('COMMIT');
