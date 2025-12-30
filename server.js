@@ -42,18 +42,29 @@ function gerarCodigoUnico() {
 
 // Normaliza datas (aceita dd/mm/aaaa ou aaaa-mm-dd) para ISO yyyy-mm-dd
 function normalizarData(valor) {
-  if (!valor) return null;
+  if (!valor || valor === '') return null;
+  const valorStr = String(valor).trim();
   // Se já estiver no formato ISO, retorna como está
-  if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) return valor;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(valorStr)) return valorStr;
   // Converte de dd/mm/aaaa para aaaa-mm-dd
-  const match = /^([0-3]?\d)\/([0-1]?\d)\/(\d{4})$/.exec(valor);
+  const match = /^([0-3]?\d)\/([0-1]?\d)\/(\d{4})$/.exec(valorStr);
   if (match) {
     const [, d, m, y] = match;
     const dd = d.padStart(2, '0');
     const mm = m.padStart(2, '0');
     return `${y}-${mm}-${dd}`;
   }
-  return valor; // fallback: deixa como veio
+  // Tenta converter se for objeto Date
+  if (valorStr.includes('T') || valorStr.includes('Z')) {
+    const date = new Date(valorStr);
+    if (!isNaN(date.getTime())) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+  }
+  return valorStr; // fallback: deixa como veio
 }
 
 // ====== ROTAS API ======
