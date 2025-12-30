@@ -862,8 +862,9 @@
                     document.querySelector('[name="titulo"]').value = data.titulo;
                     document.querySelector('[name="empresa"]').value = data.empresa;
                     document.querySelector('[name="empresa_cliente"]').value = data.empresa_cliente || '';
-                    document.querySelector('[name="data"]').value = data.data;
-                    document.querySelector('[name="data_fim"]').value = data.data_fim || '';
+                    // Corrigir formato da data para input type="date" (apenas YYYY-MM-DD)
+                    document.querySelector('[name="data"]').value = data.data ? data.data.split('T')[0] : '';
+                    document.querySelector('[name="data_fim"]').value = data.data_fim ? data.data_fim.split('T')[0] : '';
                     document.querySelector('[name="hora_inicio"]').value = data.hora_inicio || '';
                     document.querySelector('[name="hora_fim"]').value = data.hora_fim || '';
                     document.querySelector('[name="local"]').value = data.local || '';
