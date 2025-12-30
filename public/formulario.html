@@ -1235,8 +1235,10 @@
             document.getElementById('formCadastro').reset();
             // Ocultar formulário de novo cadastro
             document.getElementById('formNovoCadastro').classList.add('hide');
-            // Mostrar área de busca
-            document.getElementById('formBuscarCadastrado').style.display = 'block';
+            // Mostrar área de busca (garante remoção da classe hide)
+            const formBuscar = document.getElementById('formBuscarCadastrado');
+            formBuscar.classList.remove('hide');
+            formBuscar.style.display = 'block';
             // Limpar resultado da busca
             document.getElementById('resultadoBusca').classList.add('hide');
             document.getElementById('resultadoBusca').innerHTML = '';
