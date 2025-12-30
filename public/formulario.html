@@ -1123,18 +1123,22 @@
 
         function mostrarInfoTreinamento(data) {
             treinamentoData = data;
-            const dataFormatada = new Date(data.data).toLocaleDateString('pt-BR');
+            const dataInicio = data.data ? new Date(data.data).toLocaleDateString('pt-BR') : '';
+            const dataFim = data.data_fim ? new Date(data.data_fim).toLocaleDateString('pt-BR') : '';
+            const dataLabel = dataFim && dataFim !== dataInicio ? `${dataInicio} até ${dataFim}` : dataInicio;
+
             document.getElementById('infoTreinamento').innerHTML = `
                 <h2>${data.titulo}</h2>
                 <p><strong>Empresa:</strong> ${data.empresa}</p>
                 ${data.empresa_cliente ? `<p><strong>Cliente:</strong> ${data.empresa_cliente}</p>` : ''}
-                <p><strong>Data:</strong> ${dataFormatada}</p>
+                ${dataLabel ? `<p><strong>Data:</strong> ${dataLabel}</p>` : ''}
                 ${data.hora_inicio ? `<p><strong>Horário:</strong> ${data.hora_inicio}${data.hora_fim ? ' às ' + data.hora_fim : ''}</p>` : ''}
                 ${data.local ? `<p><strong>Local:</strong> ${data.local}</p>` : ''}
                 ${data.instrutor ? `<p><strong>Instrutor:</strong> ${data.instrutor}</p>` : ''}
+                <p id="resumoParticipante" style="margin-top: 10px; color: #555;"></p>
             `;
 
-            // Criar botões WhatsApp dinamicamente
+            atualizarResumoParticipante();
             criarBotoesWhatsApp(data);
         }
 
@@ -1291,6 +1295,7 @@
             participanteEmail = data.email;
             participanteNome = data.nome;
             salvarParticipanteLocal();
+            atualizarResumoParticipante();
 
             try {
                 const response = await fetch('/api/cadastro', {
@@ -1443,6 +1448,7 @@
                     participanteNome = data.nome || participanteNome;
                     document.getElementById('nomeParticipante').textContent = participanteNome || '';
                     document.getElementById('emailParticipante').textContent = participanteEmail || '';
+                    atualizarResumoParticipante();
                     salvarParticipanteLocal();
                 }
 
@@ -1504,6 +1510,7 @@
                     participanteEmail = email;
                     document.getElementById('nomeParticipante').textContent = participanteNome;
                     document.getElementById('emailParticipante').textContent = participanteEmail;
+                    atualizarResumoParticipante();
                     salvarParticipanteLocal();
                     alert('Dados atualizados com sucesso.');
                     fecharEdicaoDados();
@@ -1602,6 +1609,7 @@
             participanteNome = nome;
             document.getElementById('nomeParticipante').textContent = nome;
             document.getElementById('emailParticipante').textContent = email;
+            atualizarResumoParticipante();
             salvarParticipanteLocal();
             
             // Mostrar campo PIN se necessário
@@ -1637,6 +1645,18 @@
         function limparParticipanteLocal() {
             if (!storageKey) return;
             try { localStorage.removeItem(storageKey); } catch {}
+        }
+
+        function atualizarResumoParticipante() {
+            const resumo = document.getElementById('resumoParticipante');
+            if (!resumo) return;
+            if (participanteNome || participanteEmail) {
+                resumo.innerHTML = `<strong>Participante:</strong> ${(participanteNome || '').trim()} ${participanteEmail ? '(' + participanteEmail + ')' : ''}`;
+                resumo.style.display = 'block';
+            } else {
+                resumo.textContent = '';
+                resumo.style.display = 'none';
+            }
         }
 
         // Banner de Vitória
