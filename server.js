@@ -220,7 +220,7 @@ app.post('/api/respostas', async (req, res) => {
 
 // ETAPA 1: Cadastro pré-treinamento
 app.post('/api/cadastro', async (req, res) => {
-  const { treinamento_id, nome, email, telefone, funcao, area, empresa_participante } = req.body;
+  const { treinamento_id, nome, email, telefone, funcao, area, empresa_participante, consentimento_lgpd, consentimento_ip } = req.body;
   try {
     const existing = await dbGet(
       'SELECT * FROM respostas WHERE treinamento_id = $1 AND email = $2',
@@ -233,10 +233,10 @@ app.post('/api/cadastro', async (req, res) => {
 
     const result = await dbRun(
       `INSERT INTO respostas 
-       (treinamento_id, nome, email, telefone, funcao, area, empresa_participante, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'cadastrado')
+       (treinamento_id, nome, email, telefone, funcao, area, empresa_participante, status, consentimento_lgpd, consentimento_aceite_em, consentimento_ip)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'cadastrado', $8, CURRENT_TIMESTAMP, $9)
        RETURNING id`,
-      [treinamento_id, nome, email, telefone, funcao, area, empresa_participante]
+      [treinamento_id, nome, email, telefone, funcao, area, empresa_participante, Boolean(consentimento_lgpd), consentimento_ip]
     );
 
     res.json({ sucesso: true, id: result.rows[0].id, ja_cadastrado: false });

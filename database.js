@@ -88,6 +88,9 @@ const initDB = async () => {
         presenca_em TIMESTAMP,
         avaliado_em TIMESTAMP,
         certificado_arquivo VARCHAR(255),
+        consentimento_lgpd BOOLEAN DEFAULT FALSE,
+        consentimento_aceite_em TIMESTAMP,
+        consentimento_ip VARCHAR(45),
         FOREIGN KEY (treinamento_id) REFERENCES treinamentos(id)
       )
     `);
