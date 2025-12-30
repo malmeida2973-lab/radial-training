@@ -542,9 +542,178 @@
             color: #6c757d;
             text-align: center;
         }
+
+        /* Banner de Vitória */
+        .modal-vitoria {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 86, 179, 0.95) 0%, rgba(0, 61, 130, 0.95) 100%);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .modal-vitoria.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .vitoria-content {
+            background: white;
+            padding: 50px 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            70% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .trofeu {
+            font-size: 80px;
+            margin: 20px 0;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .vitoria-content h2 {
+            color: #0056B3;
+            font-size: 2em;
+            margin: 15px 0;
+            font-weight: 700;
+        }
+
+        .vitoria-content p {
+            color: #666;
+            font-size: 1.1em;
+            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .vitoria-radial {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 25px 0;
+            border: 2px solid #0056B3;
+        }
+
+        .vitoria-radial h3 {
+            color: #0056B3;
+            margin: 0 0 10px 0;
+            font-size: 1.3em;
+        }
+
+        .vitoria-radial p {
+            margin: 8px 0;
+            font-size: 0.95em;
+            color: #555;
+        }
+
+        .vitoria-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            justify-content: center;
+        }
+
+        .btn-vitoria {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-vitoria-primary {
+            background: linear-gradient(135deg, #0056B3 0%, #003d82 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-vitoria-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 86, 179, 0.4);
+        }
+
+        .btn-vitoria-secondary {
+            background: #f0f0f0;
+            color: #333;
+            flex: 1;
+        }
+
+        .btn-vitoria-secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .confete {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #FFD700;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
+    <!-- Banner de Vitória -->
+    <div id="bannerVitoria" class="modal-vitoria">
+        <div class="vitoria-content">
+            <div class="trofeu">🏆</div>
+            <h2>Parabéns!</h2>
+            <p>Você completou com sucesso!</p>
+            
+            <div class="vitoria-radial">
+                <h3>🎓 Radial Training</h3>
+                <p>Agradecemos sua participação neste treinamento. Sua dedicação e engajamento são fundamentais para o sucesso contínuo da Radial.</p>
+                <p style="margin-top: 15px; font-weight: 500; color: #0056B3;">O seu certificado estará disponível em breve!</p>
+            </div>
+
+            <div class="vitoria-buttons">
+                <button class="btn-vitoria btn-vitoria-primary" onclick="fecharBannerVitoria()">Continuar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal LGPD -->
     <div id="modalLGPD" class="modal-lgpd">
         <div class="modal-lgpd-content">
@@ -1250,10 +1419,15 @@
                 });
 
                 if (response.ok) {
-                    // Após avaliação, ir para etapa final (certificado)
+                    // Após avaliação, mostrar banner de vitória
                     document.getElementById('step3').classList.add('completed');
-                    mostrarEtapa(4);
-                    atualizarEstadoCertificado();
+                    mostrarBannerVitoria();
+                    lancarConfete();
+                    // Aguardar 3.5 segundos antes de ir para etapa final
+                    setTimeout(() => {
+                        mostrarEtapa(4);
+                        atualizarEstadoCertificado();
+                    }, 3500);
                 } else {
                     throw new Error('Erro ao enviar avaliação');
                 }
@@ -1463,6 +1637,56 @@
         function limparParticipanteLocal() {
             if (!storageKey) return;
             try { localStorage.removeItem(storageKey); } catch {}
+        }
+
+        // Banner de Vitória
+        function mostrarBannerVitoria() {
+            const modal = document.getElementById('bannerVitoria');
+            if (modal) {
+                modal.classList.add('show');
+                setTimeout(() => {
+                    modal.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        function fecharBannerVitoria() {
+            const modal = document.getElementById('bannerVitoria');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        // Efeito de confete
+        function lancarConfete() {
+            const cores = ['#FFD700', '#FF5722', '#0056B3', '#28a745', '#FF69B4'];
+            const quantidadeConfete = 50;
+
+            for (let i = 0; i < quantidadeConfete; i++) {
+                setTimeout(() => {
+                    const confete = document.createElement('div');
+                    confete.className = 'confete';
+                    confete.style.left = Math.random() * 100 + '%';
+                    confete.style.backgroundColor = cores[Math.floor(Math.random() * cores.length)];
+                    confete.style.animation = `caindo ${2 + Math.random() * 1}s linear forwards`;
+                    document.body.appendChild(confete);
+
+                    setTimeout(() => confete.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        // Adicionar animação de confete ao CSS dinamicamente
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes caindo {
+                to {
+                    transform: translateY(100vh) rotate(360deg);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
         }
     </script>
 </body>
