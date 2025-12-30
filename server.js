@@ -9,12 +9,14 @@ const fs = require('fs');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
 
-// Configurar transporte de email
+// Configurar transporte de email (usa SMTP do .env)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: process.env.SMTP_SECURE === 'true',
   auth: {
-    user: process.env.GMAIL_USER || 'nao-responda@radialtraining.com.br',
-    pass: process.env.GMAIL_PASS || ''
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || ''
   }
 });
 
@@ -268,7 +270,7 @@ app.post('/api/cadastro', async (req, res) => {
       const formLink = `${process.env.APP_URL || 'https://radial-training-production.up.railway.app'}/formulario.html?t=${treinamento.codigo_unico}`;
       
       const mailOptions = {
-        from: process.env.GMAIL_USER || 'nao-responda@radialtraining.com.br',
+        from: process.env.SMTP_FROM || process.env.SMTP_USER || 'nao-responda@radialtraining.com.br',
         to: email,
         subject: `Confirmação de Cadastro - ${treinamento.titulo}`,
         html: `
