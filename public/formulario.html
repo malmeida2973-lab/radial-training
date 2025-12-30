@@ -95,7 +95,11 @@
 
         .step-circle {
             width: 40px;
-            height: 40px;
+                        if (data.ja_cadastrado) {
+                            alert('Este e-mail já está cadastrado para este treinamento. Se precisar alterar, entre em contato com o admin.');
+                        } else {
+                            alert(data.erro || 'Erro ao cadastrar. Tente novamente.');
+                        }
             border-radius: 50%;
             background: #e0e0e0;
             color: #999;
