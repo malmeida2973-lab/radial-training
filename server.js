@@ -7,6 +7,25 @@ const { dbRun, dbGet, dbAll } = require('./db-helpers');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const nodemailer = require('nodemailer');
+
+// Configurar transporte de email
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER || 'nao-responda@radialtraining.com.br',
+    pass: process.env.GMAIL_PASS || ''
+  }
+});
+
+// Testar conexão de email
+transporter.verify((error, success) => {
+  if (error) {
+    console.log('⚠️ Email não configurado:', error.message);
+  } else if (success) {
+    console.log('✅ Email configurado com sucesso');
+  }
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -241,6 +260,76 @@ app.post('/api/cadastro', async (req, res) => {
 
     if (!result.rows || !result.rows[0]) {
       return res.status(500).json({ erro: 'Erro ao inserir participante' });
+    }
+
+    // Enviar email de confirmação
+    const treinamento = await dbGet('SELECT * FROM treinamentos WHERE id = $1', [treinamento_id]);
+    if (treinamento && email) {
+      const formLink = `${process.env.APP_URL || 'https://radial-training-production.up.railway.app'}/formulario.html?t=${treinamento.codigo_unico}`;
+      
+      const mailOptions = {
+        from: process.env.GMAIL_USER || 'nao-responda@radialtraining.com.br',
+        to: email,
+        subject: `Confirmação de Cadastro - ${treinamento.titulo}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #0056B3 0%, #003d82 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="margin: 0;">Radial Training</h1>
+            </div>
+            
+            <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+              <h2>Obrigado por participar! 🎓</h2>
+              
+              <p>Olá <strong>${nome}</strong>,</p>
+              
+              <p>Agradecemos sua inscrição e confirmamos o recebimento de seus dados para o treinamento:</p>
+              
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #0056B3; margin: 20px 0;">
+                <h3 style="color: #0056B3; margin-top: 0;">📋 Informações do Treinamento</h3>
+                <p><strong>Título:</strong> ${treinamento.titulo}</p>
+                <p><strong>Empresa:</strong> ${treinamento.empresa}</p>
+                <p><strong>Data:</strong> ${new Date(treinamento.data).toLocaleDateString('pt-BR')}</p>
+                <p><strong>Local:</strong> ${treinamento.local || 'A confirmar'}</p>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 20px 0;">
+                <h3 style="color: #28a745; margin-top: 0;">✅ Seus Dados</h3>
+                <p><strong>Nome:</strong> ${nome}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Telefone:</strong> ${telefone || '-'}</p>
+                <p><strong>Função:</strong> ${funcao || '-'}</p>
+                <p><strong>Área:</strong> ${area || '-'}</p>
+                <p><strong>Empresa:</strong> ${empresa_participante || '-'}</p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <p><strong>Para continuar o processo de treinamento, acesse:</strong></p>
+                <a href="${formLink}" style="display: inline-block; background: #0056B3; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Acessar Formulário do Treinamento</a>
+              </div>
+              
+              <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50; margin: 20px 0;">
+                <p style="margin: 0;"><strong>🔒 Seus dados estão protegidos conforme a LGPD</strong></p>
+                <p style="margin: 5px 0; font-size: 12px; color: #666;">Você já aceitou nosso termo de consentimento durante o cadastro.</p>
+              </div>
+              
+              <p>Em caso de dúvidas, entre em contato conosco.</p>
+              
+              <p>Atenciosamente,<br><strong>Equipe Radial Training</strong></p>
+              
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px; text-align: center;">By M.Almeida</p>
+            </div>
+          </div>
+        `
+      };
+      
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          console.log('⚠️ Erro ao enviar email:', error);
+        } else {
+          console.log('✅ Email enviado para:', email);
+        }
+      });
     }
 
     res.json({ sucesso: true, id: result.rows[0].id, ja_cadastrado: false });
