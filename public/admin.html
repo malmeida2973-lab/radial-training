@@ -1173,7 +1173,7 @@
         // Ver respostas
         async function verRespostas(treinamentoId, titulo) {
             try {
-                const response = await fetch(`/api/treinamentos/${treinamentoId}/respostas`);
+                const response = await fetch(`/api/treinamentos/${treinamentoId}/respostas`, { cache: 'no-store' });
                 const respostas = await response.json();
 
                 const modal = document.getElementById('modalRespostas');
@@ -1234,10 +1234,11 @@
                                 <div style="background:#fff; padding:12px; border-radius:8px; border:1px solid #e0e0e0; margin:12px 0;">
                                     <h4 style="margin-top:0;">📜 Certificado</h4>
                                     ${r.certificado_arquivo ? `
-                                        <p style="margin:8px 0; color:#137333;">✔ Certificado enviado</p>
-                                        <button class="btn-success" style="padding:6px 10px;" onclick="baixarCertificadoAdmin(${r.id})">⬇️ Baixar</button>
+                                        <p id="cert-status-${r.id}" style="margin:8px 0; color:#137333;">✔ Certificado enviado</p>
+                                        <button id="cert-download-${r.id}" class="btn-success" style="padding:6px 10px;" onclick="baixarCertificadoAdmin(${r.id})">⬇️ Baixar</button>
                                     ` : `
-                                        <p style="margin:8px 0; color:#856404;">Ainda não enviado</p>
+                                        <p id="cert-status-${r.id}" style="margin:8px 0; color:#856404;">Ainda não enviado</p>
+                                        <button id="cert-download-${r.id}" class="btn-success" style="padding:6px 10px; display:none;" onclick="baixarCertificadoAdmin(${r.id})">⬇️ Baixar</button>
                                     `}
                                     <div style="margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                                         <input type="file" accept="application/pdf,image/*" id="file-cert-${r.id}" />
@@ -1273,16 +1274,31 @@
                 alert('Selecione um arquivo de certificado (PDF ou imagem).');
                 return;
             }
+
             const form = new FormData();
             form.append('certificado', input.files[0]);
+
+            const statusEl = document.getElementById(`cert-status-${respostaId}`);
+            const downloadBtn = document.getElementById(`cert-download-${respostaId}`);
+
             try {
                 const resp = await fetch(`/api/respostas/${respostaId}/certificado`, {
                     method: 'POST',
-                    body: form
+                    body: form,
+                    cache: 'no-store'
                 });
+
                 if (resp.ok) {
+                    if (statusEl) {
+                        statusEl.textContent = '✔ Certificado enviado';
+                        statusEl.style.color = '#137333';
+                    }
+                    if (downloadBtn) {
+                        downloadBtn.style.display = 'inline-block';
+                    }
+                    input.value = '';
                     alert('Certificado enviado com sucesso.');
-                    verRespostas(treinamentoId, titulo);
+                    fecharModal();
                 } else {
                     const j = await resp.json().catch(() => ({}));
                     alert('Erro ao enviar certificado: ' + (j.erro || resp.status));
