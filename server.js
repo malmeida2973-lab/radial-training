@@ -9,23 +9,28 @@ const fs = require('fs');
 const multer = require('multer');
 const nodemailer = require('nodemailer');
 
-// Configurar transporte de email (usa SMTP do .env)
-const transporter = nodemailer.createTransport({
+// Email config (SMTP ou API)
+const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || '').toLowerCase();
+const EMAIL_API_KEY = process.env.EMAIL_API_KEY;
+const SMTP_CONFIG = {
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: process.env.SMTP_PORT || 587,
+  port: Number(process.env.SMTP_PORT || 587),
   secure: process.env.SMTP_SECURE === 'true',
   auth: {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || ''
   }
-});
+};
 
-// Testar conexão de email
+// SMTP transporter (só será usado se SMTP estiver configurado ou como fallback)
+const transporter = nodemailer.createTransport(SMTP_CONFIG);
+
+// Testar SMTP se estiver configurado
 transporter.verify((error, success) => {
   if (error) {
-    console.log('⚠️ Email não configurado:', error.message);
+    console.log('⚠️ SMTP não configurado ou indisponível:', error.message);
   } else if (success) {
-    console.log('✅ Email configurado com sucesso');
+    console.log('✅ SMTP configurado com sucesso');
   }
 });
 
@@ -55,6 +60,79 @@ const storage = multer.diskStorage({
   }
 });
 const upload = multer({ storage });
+
+function parseSender(str) {
+  if (!str) return { email: 'nao-responda@radialtraining.com.br', name: 'Radial Training' };
+  const match = /^(.*)<([^>]+)>$/.exec(str.trim());
+  if (match) {
+    return { name: match[1].trim() || undefined, email: match[2].trim() };
+  }
+  return { email: str.trim(), name: undefined };
+}
+
+async function enviarEmail({ to, subject, html, text, attachments }) {
+  const fromRaw = process.env.EMAIL_FROM || process.env.SMTP_FROM || process.env.SMTP_USER || 'nao-responda@radialtraining.com.br';
+  const sender = parseSender(fromRaw);
+
+  // Tenta Brevo API se configurado
+  if (EMAIL_PROVIDER === 'brevo' && EMAIL_API_KEY) {
+    try {
+      const payload = {
+        sender,
+        to: Array.isArray(to) ? to.map(email => ({ email })) : [{ email: to }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      };
+
+      if (attachments && attachments.length) {
+        payload.attachment = attachments.map(att => ({
+          name: att.filename,
+          content: fs.readFileSync(att.path, { encoding: 'base64' })
+        }));
+      }
+
+      const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': EMAIL_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        const body = await resp.text();
+        console.warn('Falha ao enviar e-mail via Brevo:', resp.status, body);
+      } else {
+        console.log(`📧 Email enviado via Brevo para ${Array.isArray(to) ? to.join(',') : to}`);
+        return;
+      }
+    } catch (err) {
+      console.warn('Erro ao enviar via Brevo:', err.message);
+    }
+  }
+
+  // Fallback SMTP
+  if (SMTP_CONFIG.auth.user && SMTP_CONFIG.auth.pass) {
+    try {
+      await transporter.sendMail({
+        from: fromRaw,
+        to,
+        subject,
+        html,
+        text,
+        attachments
+      });
+      console.log(`📧 Email enviado via SMTP para ${to}`);
+      return;
+    } catch (err) {
+      console.warn('Falha ao enviar e-mail via SMTP:', err.message);
+    }
+  }
+
+  console.log('⚠️ Nenhum provedor de email configurado; envio pulado.');
+}
 
 // Função auxiliar para gerar código único
 function gerarCodigoUnico() {
@@ -268,12 +346,7 @@ app.post('/api/cadastro', async (req, res) => {
     const treinamento = await dbGet('SELECT * FROM treinamentos WHERE id = $1', [treinamento_id]);
     if (treinamento && email) {
       const formLink = `${process.env.APP_URL || 'https://radial-training-production.up.railway.app'}/formulario.html?t=${treinamento.codigo_unico}`;
-      
-      const mailOptions = {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER || 'nao-responda@radialtraining.com.br',
-        to: email,
-        subject: `Confirmação de Cadastro - ${treinamento.titulo}`,
-        html: `
+      const html = `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #0056B3 0%, #003d82 100%); color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0;">
               <h1 style="margin: 0;">Radial Training</h1>
@@ -322,15 +395,12 @@ app.post('/api/cadastro', async (req, res) => {
               <p style="color: #999; font-size: 12px; text-align: center;">By M.Almeida</p>
             </div>
           </div>
-        `
-      };
-      
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          console.log('⚠️ Erro ao enviar email:', error);
-        } else {
-          console.log('✅ Email enviado para:', email);
-        }
+        `;
+
+      await enviarEmail({
+        to: email,
+        subject: `Confirmação de Cadastro - ${treinamento.titulo}`,
+        html
       });
     }
 
@@ -457,35 +527,21 @@ app.post('/api/respostas/:id/certificado', upload.single('certificado'), async (
         [respostaId]
       );
 
-      if (row && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-        const nodemailer = require('nodemailer');
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: Number(process.env.SMTP_PORT || 587),
-          secure: Boolean(process.env.SMTP_SECURE === 'true'),
-          auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        });
-
+      if (row && row.email) {
         const filePath = path.join(uploadDir, req.file.filename);
         const subject = `Certificado - ${row.titulo}`;
-        const from = process.env.SMTP_FROM || process.env.SMTP_USER;
+        const safeName = (row.nome || 'certificado').replace(/[^a-zA-Z0-9_\- ]/g, '');
 
-        try {
-          await transporter.sendMail({
-            from,
-            to: row.email,
-            subject,
-            text: `Olá ${row.nome},\n\nSeu certificado do treinamento "${row.titulo}" (${row.empresa}) está em anexo.\n\nObrigado pela participação!\n`,
-            attachments: [
-              { filename: `${(row.nome || 'certificado').replace(/[^a-zA-Z0-9_\- ]/g, '')}_certificado.pdf`, path: filePath }
-            ]
-          });
-          console.log(`📧 Certificado enviado para ${row.email}`);
-        } catch (mailErr) {
-          console.warn('Falha ao enviar certificado por e-mail:', mailErr.message);
-        }
-      } else if (!process.env.SMTP_HOST) {
-        console.log('SMTP não configurado; pulando envio de e-mail.');
+        await enviarEmail({
+          to: row.email,
+          subject,
+          text: `Olá ${row.nome},\n\nSeu certificado do treinamento "${row.titulo}" (${row.empresa}) está em anexo.\n\nObrigado pela participação!\n`,
+          attachments: [
+            { filename: `${safeName}_certificado.pdf`, path: filePath }
+          ]
+        });
+      } else {
+        console.log('⚠️ Dados do participante incompletos; e-mail não enviado.');
       }
     } catch (emailErr) {
       console.warn('Erro no fluxo de envio de e-mail:', emailErr.message);
