@@ -1,146 +1,109 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { Pool } = require('pg');
 
-// Definir caminho do banco de dados
-// Em produção (Render), usa disco persistente
-// Em desenvolvimento, usa pasta local
-const dbPath = process.env.NODE_ENV === 'production' 
-  ? '/opt/render/project/src/data/treinamentos.db' 
-  : './treinamentos.db';
+// Configuração do PostgreSQL
+// Railway fornece DATABASE_URL automaticamente
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL || process.env.DATABASE_PRIVATE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
-// Criar diretório se não existir (produção)
-if (process.env.NODE_ENV === 'production') {
-  const dbDir = path.dirname(dbPath);
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
-  }
-}
-
-// Criar/conectar ao banco de dados
-const db = new sqlite3.Database(dbPath, (err) => {
+// Testar conexão
+pool.connect((err, client, release) => {
   if (err) {
-    console.error('Erro ao conectar ao banco de dados:', err);
+    console.error('❌ Erro ao conectar ao PostgreSQL:', err.stack);
   } else {
-    console.log(`Conectado ao banco de dados SQLite: ${dbPath}`);
+    console.log('✅ Conectado ao PostgreSQL com sucesso!');
+    release();
   }
 });
 
-// Criar tabelas se não existirem
-db.serialize(() => {
-  // Tabela de administradores
-  db.run(`
-    CREATE TABLE IF NOT EXISTS admin_users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE NOT NULL DEFAULT 'admin',
-      password TEXT NOT NULL DEFAULT 'radial123',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+// Criar tabelas
+const initDB = async () => {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
 
-  // Inserir admin padrão se não existir
-  db.run(`
-    INSERT OR IGNORE INTO admin_users (id, username, password) 
-    VALUES (1, 'admin', 'radial123')
-  `);
+    // Tabela de administradores
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS admin_users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL DEFAULT 'admin',
+        password VARCHAR(255) NOT NULL DEFAULT 'radial123',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-  // Tabela de treinamentos
-  db.run(`
-    CREATE TABLE IF NOT EXISTS treinamentos (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      titulo TEXT NOT NULL,
-      empresa TEXT NOT NULL,
-      empresa_cliente TEXT,
-      data DATE NOT NULL,
-      data_fim DATE,
-      hora_inicio TEXT,
-      hora_fim TEXT,
-      local TEXT,
-      instrutor TEXT,
-      instrutores_adicionais TEXT,
-      codigo_unico TEXT UNIQUE NOT NULL,
-      pin_presenca TEXT,
-      exigir_pin BOOLEAN DEFAULT 0,
-      nome_representante TEXT,
-      telefone_representante TEXT,
-      tecnicos TEXT,
-      criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+    // Inserir admin padrão se não existir
+    await client.query(`
+      INSERT INTO admin_users (id, username, password) 
+      VALUES (1, 'admin', 'radial123')
+      ON CONFLICT (id) DO NOTHING
+    `);
 
-  // Tabela de participantes e respostas
-  db.run(`
-    CREATE TABLE IF NOT EXISTS respostas (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      treinamento_id INTEGER NOT NULL,
-      nome TEXT NOT NULL,
-      email TEXT NOT NULL,
-      telefone TEXT,
-      funcao TEXT,
-      area TEXT,
-      empresa_participante TEXT,
-      status TEXT DEFAULT 'cadastrado',
-      presente BOOLEAN DEFAULT 0,
-      avaliacao_geral INTEGER,
-      avaliacao_conteudo INTEGER,
-      avaliacao_instrutor INTEGER,
-      avaliacao_material INTEGER,
-      sugestoes TEXT,
-      cadastrado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-      presenca_em DATETIME,
-      avaliado_em DATETIME,
-      certificado_arquivo TEXT,
-      FOREIGN KEY (treinamento_id) REFERENCES treinamentos(id)
-    )
-  `);
+    // Tabela de treinamentos
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS treinamentos (
+        id SERIAL PRIMARY KEY,
+        titulo VARCHAR(255) NOT NULL,
+        empresa VARCHAR(255) NOT NULL,
+        empresa_cliente VARCHAR(255),
+        data DATE NOT NULL,
+        data_fim DATE,
+        hora_inicio VARCHAR(10),
+        hora_fim VARCHAR(10),
+        local VARCHAR(255),
+        instrutor VARCHAR(255),
+        instrutores_adicionais TEXT,
+        codigo_unico VARCHAR(50) UNIQUE NOT NULL,
+        pin_presenca VARCHAR(50),
+        exigir_pin BOOLEAN DEFAULT FALSE,
+        nome_representante VARCHAR(255),
+        telefone_representante VARCHAR(20),
+        tecnicos TEXT,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-  // Garantir coluna de certificado (para bases existentes)
-  db.all("PRAGMA table_info(respostas)", (err, rows) => {
-    if (!err) {
-      const hasCert = rows.some(r => r.name === 'certificado_arquivo');
-      if (!hasCert) {
-        db.run("ALTER TABLE respostas ADD COLUMN certificado_arquivo TEXT", (e2) => {
-          if (e2) {
-            console.warn('Aviso ao adicionar coluna certificado_arquivo:', e2.message);
-          }
-        });
-      }
-    }
-  });
+    // Tabela de participantes e respostas
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS respostas (
+        id SERIAL PRIMARY KEY,
+        treinamento_id INTEGER NOT NULL,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        telefone VARCHAR(20),
+        funcao VARCHAR(255),
+        area VARCHAR(255),
+        empresa_participante VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'cadastrado',
+        presente BOOLEAN DEFAULT FALSE,
+        avaliacao_geral INTEGER,
+        avaliacao_conteudo INTEGER,
+        avaliacao_instrutor INTEGER,
+        avaliacao_material INTEGER,
+        sugestoes TEXT,
+        cadastrado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        presenca_em TIMESTAMP,
+        avaliado_em TIMESTAMP,
+        certificado_arquivo VARCHAR(255),
+        FOREIGN KEY (treinamento_id) REFERENCES treinamentos(id)
+      )
+    `);
 
-  // Garantir colunas de contato (para bases existentes)
-  db.all("PRAGMA table_info(treinamentos)", (err, rows) => {
-    if (!err) {
-      const colunas = rows.map(r => r.name);
-      const colunasNovas = [
-        'instrutores_adicionais',
-        'tecnicos',
-        'nome_representante',
-        'telefone_representante'
-      ];
-      
-      colunasNovas.forEach(coluna => {
-        if (!colunas.includes(coluna)) {
-          db.run(`ALTER TABLE treinamentos ADD COLUMN ${coluna} TEXT`, (e2) => {
-            if (e2) {
-              console.warn(`Aviso ao adicionar coluna ${coluna}:`, e2.message);
-            }
-          });
-        }
-      });
-      
-      // Remover colunas antigas se existirem (para evitar conflitos)
-      const colunasAntigas = ['telefone_instrutor', 'telefone_tecnico', 'nome_tecnico'];
-      colunasAntigas.forEach(coluna => {
-        if (colunas.includes(coluna)) {
-          console.log(`Coluna ${coluna} ainda existe (será mantida para compatibilidade)`);
-        }
-      });
-    }
-  });
+    await client.query('COMMIT');
+    console.log('✅ Tabelas criadas/verificadas com sucesso no PostgreSQL');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Erro ao criar tabelas:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
 
-  console.log('Tabelas criadas/verificadas com sucesso');
-});
+// Inicializar banco de dados
+initDB().catch(console.error);
 
-module.exports = db;
+module.exports = pool;
