@@ -282,24 +282,25 @@
 
         .treinamento-acoes {
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
+            flex-wrap: nowrap;
+            gap: 3px;
             margin-bottom: 12px;
             padding-bottom: 12px;
             border-bottom: 1px solid #e5eaf2;
         }
 
         .treinamento-acoes button {
-            padding: 5px 10px;
-            font-size: 11px;
-            border-radius: 6px;
+            padding: 3px 5px;
+            font-size: 9px;
+            border-radius: 4px;
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 2px;
             font-weight: 600;
             transition: transform 0.15s, box-shadow 0.15s;
+            white-space: nowrap;
         }
 
         .treinamento-acoes button:hover {
@@ -1386,19 +1387,19 @@
                         <div class="treinamento-card">
                             <div class="treinamento-acoes">
                                 <button class="btn-view" onclick="verRespostas(${t.id}, '${t.titulo.replace(/'/g, "\\'")}')">
-                                    👁️ Ver
+                                    👁️
                                 </button>
                                 <button class="btn-export" onclick="exportarCSV(${t.id}, '${t.titulo.replace(/'/g, "\\'")}')">
-                                    📊 CSV
+                                    📊
                                 </button>
                                 <button class="btn-qr" onclick="verQRCode(${t.id})">
-                                    📱 QR
+                                    📱
                                 </button>
                                 <button class="btn-edit" onclick="editarTreinamento(${t.id})">
-                                    ✏️ Editar
+                                    ✏️
                                 </button>
                                 <button class="btn-delete" onclick="deletarTreinamento(${t.id})">
-                                    🗑️ Excluir
+                                    🗑️
                                 </button>
                             </div>
                             <div class="treinamento-titulo">${t.titulo}</div>
