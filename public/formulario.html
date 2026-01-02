@@ -95,11 +95,7 @@
 
         .step-circle {
             width: 40px;
-                        if (data.ja_cadastrado) {
-                            alert('Este e-mail já está cadastrado para este treinamento. Se precisar alterar, entre em contato com o admin.');
-                        } else {
-                            alert(data.erro || 'Erro ao cadastrar. Tente novamente.');
-                        }
+            height: 40px;
             border-radius: 50%;
             background: #e0e0e0;
             color: #999;
@@ -388,6 +384,51 @@
             .whatsapp-btn {
                 font-size: 13px;
                 padding: 10px 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+
+            .container {
+                padding: 16px;
+                border-radius: 14px;
+            }
+
+            .logo {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .logo h1 {
+                font-size: 1.3em;
+            }
+
+            .steps {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            .steps::before {
+                display: none;
+            }
+
+            .step {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                text-align: left;
+            }
+
+            .step-circle {
+                margin: 0;
+            }
+
+            .step-label {
+                font-size: 11px;
             }
         }
 
