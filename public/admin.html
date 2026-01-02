@@ -283,21 +283,21 @@
         .treinamento-acoes {
             display: flex;
             flex-wrap: nowrap;
-            gap: 3px;
+            gap: 6px;
             margin-bottom: 12px;
             padding-bottom: 12px;
             border-bottom: 1px solid #e5eaf2;
         }
 
         .treinamento-acoes button {
-            padding: 3px 5px;
-            font-size: 9px;
-            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 11px;
+            border-radius: 6px;
             border: none;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 2px;
+            gap: 4px;
             font-weight: 600;
             transition: transform 0.15s, box-shadow 0.15s;
             white-space: nowrap;
@@ -306,6 +306,18 @@
         .treinamento-acoes button:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        /* Mobile: botões menores */
+        @media (max-width: 480px) {
+            .treinamento-acoes {
+                gap: 3px;
+            }
+            .treinamento-acoes button {
+                padding: 4px 6px;
+                font-size: 9px;
+                gap: 2px;
+            }
         }
 
         .treinamento-info {
@@ -1387,19 +1399,19 @@
                         <div class="treinamento-card">
                             <div class="treinamento-acoes">
                                 <button class="btn-view" onclick="verRespostas(${t.id}, '${t.titulo.replace(/'/g, "\\'")}')">
-                                    👁️
+                                    👁️ Ver
                                 </button>
                                 <button class="btn-export" onclick="exportarCSV(${t.id}, '${t.titulo.replace(/'/g, "\\'")}')">
-                                    📊
+                                    📊 CSV
                                 </button>
                                 <button class="btn-qr" onclick="verQRCode(${t.id})">
-                                    📱
+                                    📱 QR
                                 </button>
                                 <button class="btn-edit" onclick="editarTreinamento(${t.id})">
-                                    ✏️
+                                    ✏️ Editar
                                 </button>
                                 <button class="btn-delete" onclick="deletarTreinamento(${t.id})">
-                                    🗑️
+                                    🗑️ Excluir
                                 </button>
                             </div>
                             <div class="treinamento-titulo">${t.titulo}</div>
