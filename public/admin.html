@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radial Training - Admin</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230d47a1'/%3E%3Cpath d='M30 35 Q35 30 40 35 Q45 30 50 35 Q55 30 60 35 Q65 30 70 35' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M35 45 Q40 40 45 45 Q50 40 55 45 Q60 40 65 45' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
@@ -769,25 +770,25 @@
             <h2 style="color: #0056B3; margin-bottom: 20px;">🔐 Alterar Senha do Admin</h2>
             
             <form id="formAlterarSenha" onsubmit="alterarSenha(event)">
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Senha Atual:</label>
-                    <input type="password" id="senhaAtual" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95em;">Senha Atual:</label>
+                    <input type="password" id="senhaAtual" required style="width: 100%; padding: 10px; border: 1.5px solid #d7deea; border-radius: 10px; font-size: 14px;">
                 </div>
                 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Nova Senha:</label>
-                    <input type="password" id="novaSenha" required minlength="6" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                    <small style="color: #666;">Mínimo 6 caracteres</small>
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95em;">Nova Senha:</label>
+                    <input type="password" id="novaSenha" required minlength="6" style="width: 100%; padding: 10px; border: 1.5px solid #d7deea; border-radius: 10px; font-size: 14px;">
+                    <small style="color: #666; font-size: 0.85em;">Mínimo 6 caracteres</small>
                 </div>
                 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">Confirmar Nova Senha:</label>
-                    <input type="password" id="confirmarSenha" required minlength="6" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                <div style="margin-bottom: 14px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.95em;">Confirmar Nova Senha:</label>
+                    <input type="password" id="confirmarSenha" required minlength="6" style="width: 100%; padding: 10px; border: 1.5px solid #d7deea; border-radius: 10px; font-size: 14px;">
                 </div>
                 
-                <div id="msgSenha" style="display: none; padding: 10px; margin-bottom: 15px; border-radius: 5px;"></div>
+                <div id="msgSenha" style="display: none; padding: 10px; margin-bottom: 12px; border-radius: 8px; font-size: 0.9em;"></div>
                 
-                <button type="submit" class="btn btn-primary" style="width: 100%;">💾 Salvar Nova Senha</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px;">💾 Salvar Nova Senha</button>
             </form>
         </div>
     </div>

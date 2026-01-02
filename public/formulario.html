@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radial Training</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%230d47a1'/%3E%3Cpath d='M30 35 Q35 30 40 35 Q45 30 50 35 Q55 30 60 35 Q65 30 70 35' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Cpath d='M35 45 Q40 40 45 45 Q50 40 55 45 Q60 40 65 45' stroke='white' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
@@ -91,8 +92,9 @@
         .steps {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 26px;
+            margin-bottom: 22px;
             position: relative;
+            gap: 8px;
         }
 
         .steps::before {
@@ -111,6 +113,9 @@
             text-align: center;
             position: relative;
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         .step-circle {
@@ -122,10 +127,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 8px;
+            margin: 0 auto 6px;
             font-weight: 700;
             transition: all 0.25s ease;
             border: 1.5px solid #d5deec;
+            flex-shrink: 0;
         }
 
         .step.active .step-circle {
@@ -143,9 +149,13 @@
         }
 
         .step-label {
-            font-size: 12px;
+            font-size: 11px;
             color: #5a6783;
             font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
         }
 
         .step.active .step-label {
@@ -430,37 +440,36 @@
             }
 
             .logo {
-                flex-direction: column;
-                gap: 8px;
+                margin-bottom: 18px;
+                gap: 10px;
             }
 
             .logo h1 {
-                font-size: 1.3em;
+                font-size: 1.2em;
             }
 
             .steps {
-                flex-direction: column;
-                gap: 12px;
-                align-items: flex-start;
+                margin-bottom: 18px;
+                gap: 4px;
             }
 
             .steps::before {
-                display: none;
+                top: 18px;
             }
 
             .step {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                text-align: left;
+                min-width: 0;
             }
 
             .step-circle {
-                margin: 0;
+                width: 32px;
+                height: 32px;
+                margin: 0 auto 4px;
+                font-size: 0.85em;
             }
 
             .step-label {
-                font-size: 11px;
+                font-size: 10px;
             }
         }
 
