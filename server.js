@@ -186,7 +186,7 @@ function normalizarData(valor) {
 
 // Criar novo treinamento
 app.post('/api/treinamentos', async (req, res) => {
-  const { titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, exigir_pin } = req.body;
+  const { titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, exigir_pin, link_material } = req.body;
   const codigoUnico = gerarCodigoUnico();
   const pinPresenca = exigir_pin ? Math.floor(100000 + Math.random() * 900000).toString() : null;
   const dataISO = normalizarData(data);
@@ -196,17 +196,17 @@ app.post('/api/treinamentos', async (req, res) => {
       INSERT INTO treinamentos (
         titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local,
         instrutor, instrutores_adicionais, codigo_unico, pin_presenca, exigir_pin,
-        nome_representante, telefone_representante, tecnicos
+        nome_representante, telefone_representante, tecnicos, link_material
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8,
         $9, $10, $11, $12, $13,
-        $14, $15, $16
+        $14, $15, $16, $17
       ) RETURNING id`;
 
     const result = await dbRun(insertQuery, [
       titulo, empresa, empresa_cliente, dataISO, dataFimISO, hora_inicio, hora_fim, local,
       instrutor, instrutores_adicionais, codigoUnico, pinPresenca, Boolean(exigir_pin),
-      nome_representante, telefone_representante, tecnicos
+      nome_representante, telefone_representante, tecnicos, link_material
     ]);
 
     const treinamentoId = result.rows[0].id;
@@ -269,15 +269,15 @@ app.get('/api/treinamentos/:codigo', async (req, res) => {
 
 // Atualizar treinamento existente
 app.put('/api/treinamentos/:id', async (req, res) => {
-  const { titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, exigir_pin } = req.body;
+  const { titulo, empresa, empresa_cliente, data, data_fim, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, exigir_pin, link_material } = req.body;
   const dataISO = normalizarData(data);
   const dataFimISO = normalizarData(data_fim);
   try {
     const result = await dbRun(
       `UPDATE treinamentos 
-       SET titulo = $1, empresa = $2, empresa_cliente = $3, data = $4, data_fim = $5, hora_inicio = $6, hora_fim = $7, local = $8, instrutor = $9, instrutores_adicionais = $10, nome_representante = $11, telefone_representante = $12, tecnicos = $13, exigir_pin = $14
-       WHERE id = $15`,
-      [titulo, empresa, empresa_cliente, dataISO, dataFimISO, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, Boolean(exigir_pin), req.params.id]
+       SET titulo = $1, empresa = $2, empresa_cliente = $3, data = $4, data_fim = $5, hora_inicio = $6, hora_fim = $7, local = $8, instrutor = $9, instrutores_adicionais = $10, nome_representante = $11, telefone_representante = $12, tecnicos = $13, exigir_pin = $14, link_material = $15
+       WHERE id = $16`,
+      [titulo, empresa, empresa_cliente, dataISO, dataFimISO, hora_inicio, hora_fim, local, instrutor, instrutores_adicionais, nome_representante, telefone_representante, tecnicos, Boolean(exigir_pin), link_material, req.params.id]
     );
     res.json({ sucesso: true, alteracoes: result.rowCount });
   } catch (err) {

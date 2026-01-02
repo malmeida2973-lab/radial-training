@@ -1221,7 +1221,7 @@
                 ${dataLabel ? `<p><strong>Data:</strong> ${dataLabel}</p>` : ''}
                 ${data.hora_inicio ? `<p><strong>Horário:</strong> ${data.hora_inicio}${data.hora_fim ? ' às ' + data.hora_fim : ''}</p>` : ''}
                 ${data.local ? `<p><strong>Local:</strong> ${data.local}</p>` : ''}
-                ${data.instrutor ? `<p><strong>Instrutor:</strong> ${data.instrutor}</p>` : ''}
+                ${data.link_material ? `<p><strong>Material:</strong> <a href="${data.link_material}" target="_blank" style="color: var(--brand-orange); text-decoration: none;">Baixar Apostila/Material</a></p>` : ''}
                 <p id="resumoParticipante" style="margin-top: 10px; color: #555;"></p>
             `;
 

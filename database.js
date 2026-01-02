@@ -62,6 +62,7 @@ const initDB = async () => {
         nome_representante VARCHAR(255),
         telefone_representante VARCHAR(20),
         tecnicos TEXT,
+        link_material TEXT,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -112,6 +113,13 @@ const initDB = async () => {
       await client.query(`ALTER TABLE respostas ADD COLUMN IF NOT EXISTS consentimento_ip VARCHAR(45)`);
     } catch (e) {
       console.log('Coluna consentimento_ip: ', e.message);
+    }
+
+    // Adicionar coluna link_material se não existir
+    try {
+      await client.query(`ALTER TABLE treinamentos ADD COLUMN IF NOT EXISTS link_material TEXT`);
+    } catch (e) {
+      console.log('Coluna link_material: ', e.message);
     }
 
     await client.query('COMMIT');

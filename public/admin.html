@@ -705,6 +705,11 @@
                         <input type="text" name="local" placeholder="Ex: São Paulo - SP">
                     </div>
 
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label>📁 Link do Material (Google Drive)</label>
+                        <input type="url" name="link_material" placeholder="https://drive.google.com/drive/folders/...">
+                    </div>
+
                     <!-- Instrutores -->
                     <div class="dynamic-section" style="grid-column: 1 / -1;">
                         <h4>➕ Instrutores (Com WhatsApp)</h4>
@@ -991,7 +996,7 @@
                 hora_inicio: formData.get('hora_inicio'),
                 hora_fim: formData.get('hora_fim'),
                 local: formData.get('local'),
-                instrutor: formData.get('instrutor'),
+                link_material: formData.get('link_material'),
                 instrutores_adicionais: JSON.stringify(obterInstrutores()),
                 nome_representante: formData.get('nome_representante'),
                 telefone_representante: formData.get('telefone_representante'),
@@ -1054,7 +1059,7 @@
                     document.querySelector('[name="hora_inicio"]').value = data.hora_inicio || '';
                     document.querySelector('[name="hora_fim"]').value = data.hora_fim || '';
                     document.querySelector('[name="local"]').value = data.local || '';
-                    document.querySelector('[name="instrutor"]').value = data.instrutor || '';
+                    document.querySelector('[name="link_material"]').value = data.link_material || '';
                     document.querySelector('[name="nome_representante"]').value = data.nome_representante || '';
                     document.querySelector('[name="telefone_representante"]').value = data.telefone_representante || '';
                     document.querySelector('[name="exigir_pin"]').checked = data.exigir_pin === 1;
