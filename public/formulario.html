@@ -42,18 +42,27 @@
 
         .logo {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 26px;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 15px;
+            gap: 14px;
+        }
+
+        .logo .logo-wrapper {
+            background: var(--brand-blue);
+            padding: 14px;
+            border-radius: 14px;
+            display: inline-flex;
+            box-shadow: 0 8px 20px rgba(13, 71, 161, 0.22);
         }
 
         .logo img {
-            height: 64px;
+            height: 56px;
             width: auto;
             max-width: 100%;
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+            display: block;
         }
 
         .logo h1 {
@@ -227,16 +236,16 @@
 
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background: linear-gradient(135deg, var(--brand-blue) 0%, var(--brand-blue-dark) 100%);
             color: white;
             border: none;
             border-radius: 12px;
-            font-size: 17px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 12px 24px rgba(13, 71, 161, 0.2);
+            box-shadow: 0 10px 20px rgba(13, 71, 161, 0.2);
         }
 
         .btn:hover {
@@ -854,7 +863,9 @@
 
     <div class="container">
         <div class="logo">
-            <img src="logo.jpg?t=20251223170400" alt="Logo Radial" style="max-height: 64px;">
+            <div class="logo-wrapper">
+                <img src="logo.jpg?t=20251223170400" alt="Logo Radial">
+            </div>
             <h1>Radial Training</h1>
         </div>
 
