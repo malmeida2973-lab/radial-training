@@ -557,14 +557,14 @@
     <div class="container">
         <div class="header">
             <div style="display: flex; align-items: center; gap: 20px;">
-                <img src="logo.jpg?t=20251223170400" alt="Logo Radial" style="height: 60px; width: auto;">
+                <img src="logo.jpg?t=20251223170400" alt="Logo Radial" style="height: 56px; width: auto; filter: brightness(0) invert(1); mix-blend-mode: normal;">
                 <div>
                     <h1>🎓 Painel Administrativo</h1>
-                    <p>Sistema de Gerenciamento de Treinamentos - Radial</p>
+                    <p style="opacity: 0.92; font-size: 0.95em;">Sistema de Gerenciamento de Treinamentos - Radial</p>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="btn" onclick="abrirModalSenha()" style="background: #FF5722; color: white;">🔐 Alterar Senha</button>
+                <button class="btn" onclick="abrirModalSenha()" style="background: var(--brand-orange); color: white; box-shadow: 0 8px 18px rgba(255, 107, 0, 0.22);">🔐 Alterar Senha</button>
                 <button class="btn-logout" onclick="fazerLogout()">Sair</button>
             </div>
         </div>
